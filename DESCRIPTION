@@ -1,0 +1,25 @@
+Package: TraCESahulMisc
+Type: Package
+Title: TraCE-Sahul_misc
+Version: 0.1.0
+Authors@R: c(
+    person(
+      "Stuart", "Brown",
+      email = "s.brown@adelaide.edu.au",
+      role = c("aut", "cre")
+    )
+  )
+Description: Functions and examples for interaction with the TraCE-Sahul dataset.
+    Contains an example fossil dataset for a virtual species, and some basic 
+    functions for collating, subsetting, and processing data from the 
+    TraCE-Sahul dataset.
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Depends:
+    R (>= 4.4.0),
+Suggests:
+    terra (>= 1.8-50)
+RoxygenNote: 7.3.1
+Imports: 
+    utils
