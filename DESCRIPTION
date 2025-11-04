@@ -13,7 +13,7 @@ Description: Functions and examples for interaction with the TraCE-Sahul dataset
     Contains an example fossil dataset for a virtual species, and some basic 
     functions for collating, subsetting, and processing data from the 
     TraCE-Sahul dataset.
-License: MIT + file LICENSE
+License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
 Depends:
