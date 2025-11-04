@@ -10,7 +10,9 @@ setTime(x)
 \item{x}{A \code{\link[terra:rast]{SpatRast}} object from the \emph{TraCE-Sahul} dataset}
 }
 \value{
-A \emph{SpatRaster} with updated time index
+A \emph{SpatRaster} with updated time index showing the relevant year
+
+A \emph{data.table} in the \code{.GlobalEnv} named \code{TraCESahul_time_steps} with the relevant details for all timesteps for \code{x}
 }
 \description{
 This function sets the \code{\link[terra:time]{time index}} of a SpatRaster
@@ -21,7 +23,7 @@ dataset. Internally the function reads a CSV of timesteps from
 \details{
 The function will stop if \code{x} is not a SpatRaster.
 
-The function \strong{should} work with the subsets of the decadal data
+The function \strong{should} will with the subsets of the decadal data
 e.g \emph{TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_000001.nc}
 provided that they haven't been renamed!
 }

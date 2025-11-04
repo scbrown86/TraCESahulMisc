@@ -17,8 +17,8 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Depends:
+    data.table,
     R (>= 4.4.0),
-Suggests:
     terra (>= 1.8-50)
 RoxygenNote: 7.3.1
 Imports: 

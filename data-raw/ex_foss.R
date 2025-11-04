@@ -1,29 +1,33 @@
 ## code to prepare `ex_foss` dataset goes here
+
+# this code assumes you have downloaded the example TraCE-Sahul data
+library(terra)
 library(virtualspecies)
-library(geodata)
 
 dmon <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 
-worldclim <- lapply(c("prec", "tmax", "tmin"), function(i) {
-  r <- rast(list.files(path = "C:/Users/Stu/Downloads/wc2.1_country/",
-                       pattern = sprintf("%s.*\\.tif$", i), full.names = TRUE),
-            win = ext(112.5, 154, -45, -10)
-  )*1
+ex_data <- lapply(c("pr", "tasmax", "tasmin"), function(i) {
+  r <- rast(list.files(path = "C:/Users/Stu/Downloads/TraCESahul/TraCE-Sahul/",
+                       recursive = TRUE,
+                       pattern = sprintf("TraCE_22ka_downscaled_%s_1500_1990_biascorr.nc", i),
+                       full.names = TRUE),
+            lyrs = 5761:5880)*1
+  time(r) <- seq(as.Date("1980-01-16"), by ="month", l = nlyr(r))
+  r <- tapp(r, "month", mean, na.rm = TRUE)
   names(r) <- paste0(month.abb,"_", i)
   r})
-worldclim[[1]] <- worldclim[[1]]/dmon #mm/day
-# worldclim
+ex_data[[1]] <- ex_data[[1]]*(86400*dmon) #kg m-2 s-1 --> mm/day
 
 # check of rainfall
-# panel(worldclim[[1]], range = c(0, 10),
+# panel(ex_data[[1]], range = c(0, 150),
 #       col = hcl.colors(100, "Roma"),
 #       fill_range = TRUE)
 
-aus_stack <- rast(worldclim)
+ex_data <- rast(ex_data)
 
 # Generate species
 {set.seed(9621);
-  realistic.sp <- generateRandomSp(aus_stack,
+  realistic.sp <- generateRandomSp(ex_data,
                                    rescale = TRUE,
                                    plot = TRUE,
                                    realistic.sp = TRUE,
@@ -31,7 +35,7 @@ aus_stack <- rast(worldclim)
 # realistic.sp
 
 {set.seed(8945); sp.locs <- terra::spatSample(x = realistic.sp$suitab.raster,
-                                              size = 150, method = "weights",
+                                              size = 75, method = "weights",
                                               replace = TRUE, na.rm = TRUE,
                                               as.raster = FALSE, as.df = FALSE,
                                               as.points = TRUE,
