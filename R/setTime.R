@@ -7,17 +7,20 @@
 #' \code{inst/extdata/TraCE-Sahul_timesteps.csv}.
 #'
 #' @details
-#' The function will stop if \code{x} is not a SpatRaster.
+#' The function will stop if \code{x} is not a file.path.
 #'
 #' The function \strong{should} will with the subsets of the decadal data
 #' e.g \emph{TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_000001.nc}
 #' provided that they haven't been renamed!
 #'
+#' @import terra
+#' @import ncdfCF
+#'
 #' @note
 #' There are no checks done to ensure that the dataset passed is decadal data
 #' from \emph{TraCE-Sahul}.
 #'
-#' @param x A \code{\link[terra:rast]{SpatRast}} object from the \emph{TraCE-Sahul} dataset
+#' @param x A filepath pointing to the \emph{TraCE-Sahul} dataset(s)
 #' @return A \emph{SpatRaster} with updated time index showing the relevant year
 #'
 #' A \emph{data.table} in the \code{.GlobalEnv} named \code{TraCESahul_time_steps} with the relevant details for all timesteps for \code{x}
@@ -25,11 +28,11 @@
 #' @examples
 #' \dontrun{
 #' library(terra)
-#' climData <- rast("TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_000001.nc")
-#' climData <- setTime(climData)
+#' fn <- "TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_000001.nc"
+#' climData <- setTime(fn)
 #' climData
 #' }
-#' @export
+#'
 setTime <- function(x) {
   if (!requireNamespace("terra", quietly = TRUE)) {
     stop("Package 'terra' is required for setTime()")
@@ -37,7 +40,10 @@ setTime <- function(x) {
   if (!requireNamespace("data.table", quietly = TRUE)) {
     stop("Package 'data.table' is required for setTime()")
   }
-  stopifnot("`x` must be a `terra::SpatRaster`" = inherits(x, "SpatRaster"))
+  if (!requireNamespace("ncdfCF", quietly = TRUE)) {
+    stop("Package 'ncdfDF' is required for setTime()")
+  }
+  stopifnot("`x` must be a valid `file.path` to the TraCE-Sahul data" = file.exists(x))
   # get the number of layers
   nt <- terra::nlyr(x)
   # read in the data

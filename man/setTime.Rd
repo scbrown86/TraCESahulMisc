@@ -7,7 +7,7 @@
 setTime(x)
 }
 \arguments{
-\item{x}{A \code{\link[terra:rast]{SpatRast}} object from the \emph{TraCE-Sahul} dataset}
+\item{x}{A filepath pointing to the \emph{TraCE-Sahul} dataset(s)}
 }
 \value{
 A \emph{SpatRaster} with updated time index showing the relevant year
@@ -21,7 +21,7 @@ dataset. Internally the function reads a CSV of timesteps from
 \code{inst/extdata/TraCE-Sahul_timesteps.csv}.
 }
 \details{
-The function will stop if \code{x} is not a SpatRaster.
+The function will stop if \code{x} is not a file.path.
 
 The function \strong{should} will with the subsets of the decadal data
 e.g \emph{TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_000001.nc}
@@ -34,8 +34,9 @@ from \emph{TraCE-Sahul}.
 \examples{
 \dontrun{
 library(terra)
-climData <- rast("TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_000001.nc")
-climData <- setTime(climData)
+fn <- "TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_000001.nc"
+climData <- setTime(fn)
 climData
 }
+
 }

@@ -24,7 +24,6 @@ download_trace_data <- function(destdir,...) {
   old_timeout <- getOption("timeout")
   on.exit(options(timeout = old_timeout), add = TRUE)
   options(timeout = max(1800, old_timeout)) #0.5 hour timeout
-
   destfile <- file.path(destdir, "TraCE-Sahul.tar.gz")
   message("Downloading: ", url)
   utils::download.file(url, destfile, mode = "wb", quiet = FALSE)
