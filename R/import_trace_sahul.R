@@ -80,9 +80,30 @@ classify_TraCESahul <- function(files) {
 #'
 #' @examples
 #' \dontrun{
-#' fn <- "TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_01.nc"
-#' pr_chunk01 <- import_TraCESahul(fn)
-#' pr_chunk01
+#' fn <- list.files("~/TraCE-Sahul/pr", full.names = TRUE)
+#' fn <- fn[3:8]
+#' # [1] "~/TraCE-Sahul/pr/TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_01.nc" "~/TraCE-Sahul/pr/TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_02.nc"
+#' # [3] "~/TraCE-Sahul/pr/TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_03.nc" "~/TraCE-Sahul/pr/TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_04.nc"
+#' # [5] "~/TraCE-Sahul/pr/TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_05.nc" "~/TraCE-Sahul/pr/TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_06.nc"
+#' pr_chunks <- import_TraCESahul(fn)
+#' pr_chunks
+#' # class       : SpatRaster
+#' # size        : 100, 200, 25860  (nrow, ncol, nlyr)
+#' # resolution  : 0.05, 0.05  (x, y)
+#' # extent      : 125, 135, -13, -8  (xmin, xmax, ymin, ymax)
+#' # coord. ref. : lon/lat WGS 84 (CRS84) (OGC:CRS84)
+#' # sources     : TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_01.nc  (4812 layers)
+#' #               TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_02.nc  (4812 layers)
+#' #               TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_03.nc  (4812 layers)
+#' #               ... and 3 more sources
+#' # varnames    : pr (precipitation)
+#' #               pr (precipitation)
+#' #               pr (precipitation)
+#' #              ...
+#' # names       :       pr_1,       pr_2,       pr_3,       pr_4,       pr_5,       pr_6,        ...
+#' # unit        : kg m-2 s-1
+#' # depth       : 1 to 12 (Month [calendar month]: 12 steps)
+#' # time (raw)  : -20045 to 1495 (2155 steps)
 #' }
 #' @export
 #'
@@ -112,7 +133,9 @@ import_TraCESahul <- function(files) {
   handle_decadal_single <- function(f) {
     data <- load_timestep_table()
     chunk <- unname(out$chunk_num)
-    data <- data[data$file_step == chunk]
+    if (!is.na(chunk)) {
+      data <- data[file_step == chunk, ]
+    }
     ds <- terra::rast(f)
     ds <- set_monthly_metadata(ds, data$Year)
     assign("TraCESahul_time_steps", data, envir = .GlobalEnv)
