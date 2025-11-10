@@ -27,7 +27,7 @@ If the monthly data from 1500-1989 is also provided, it will be appended.
 The function will stop if \code{x} is not a file.path or series of file.paths.
 
 The function will work with the subsets of the decadal data
-e.g \emph{TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_000001.nc}
+e.g \emph{TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_01.nc}
 provided that they haven't been renamed!
 }
 \note{
@@ -37,7 +37,7 @@ filepaths must be given in order (e.g. 01.nc, 02.nc, 03.nc, 04.nc, 05.nc, 06.nc,
 }
 \examples{
 \dontrun{
-fn <- "TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_000001.nc"
+fn <- "TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_01.nc"
 pr_chunk01 <- import_TraCESahul(fn)
 pr_chunk01
 }

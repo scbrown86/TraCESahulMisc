@@ -9,6 +9,6 @@ classify_TraCESahul(files)
 \description{
 This function classifies the input files into a number of different categories
 depending on whats passed which is then used to switch the function used for
-importing the data. This function is no exported, and should not ever need to
+importing the data. This function is not exported, and should not ever need to
 be called directly by the user.
 }

@@ -9,12 +9,9 @@
 classify_TraCESahul <- function(files) {
   stopifnot(length(files) > 0)
   bfiles <- basename(files)
-  # Extract variable name
   vars <- sub("^TraCE_22ka_downscaled_([^_]+)_.*$", "\\1", bfiles)
   stopifnot("Only a single variable can be processed at a time. Check your input files." = length(unique(vars)) == 1)
   is_1500_1990 <- endsWith(bfiles, "1500_1990_biascorr.nc")
-  is_decadal_single <- grepl("21k_1500CE_biascorr\\.nc$|_biascorr_[0-9]{2}\\.nc$", bfiles)
-  # Chunk pattern (01–06)
   chunk_pattern <- "_biascorr_([0-9]{2})\\.nc$"
   chunk_extract <- function(x) {
     m <- regexec(chunk_pattern, x)
@@ -24,38 +21,29 @@ classify_TraCESahul <- function(files) {
   chunk_nums <- vapply(bfiles, chunk_extract, integer(1))
   is_chunk <- !is.na(chunk_nums)
   n <- length(files)
-  # Monthly data from 1500–1990
   if (n == 1 && is_1500_1990) {
     return(list(case = "1500_1990_single", var = unique(vars), n = 1))
   }
-  # Single decadal chunk
-  if (n == 1 && is_decadal_single) {
+  if (n == 1 && (endsWith(bfiles, "21k_1500CE_biascorr.nc") || is_chunk)) {
     return(list(case = "decadal_single", var = unique(vars), n = 1, chunk_num = chunk_nums))
   }
-  # Six chunked files in order
-  if (n == 6 &&
-      all(is_chunk) &&
-      all.equal(unname(chunk_nums), 1:6)) {
+  if (n == 6 && all(is_chunk) && identical(unname(chunk_nums), 1:6)) {
     return(list(case = "decadal_chunks_6", var = unique(vars), n = 6))
   }
-  # Seven-file case: six decadal chunks + monhthly data
   if (n == 7) {
-    # first six must be chunks 1..6 *in order*
     first6 <- bfiles[1:6]
     last1  <- bfiles[7]
-    chunk_nums_first6 <- vapply(first6, chunk_extract, integer(1))
-    if (all.equal(unname(chunk_nums_first6), 1:6) &&
-        ends_with(last1, "1500_1990_biascorr.nc")) {
+    nums6 <- vapply(first6, chunk_extract, integer(1))
+    if (identical(unname(nums6), 1:6) &&
+        endsWith(last1, "1500_1990_biascorr.nc"))
       return(list(case = "chunks_plus_1500_1990", var = unique(vars), n = 7))
-    }
   }
-  # Two-files: full decadal file then monthly data
   if (n == 2 &&
-      is_decadal_single[1] &&
+      (endsWith(bfiles[1], "21k_1500CE_biascorr.nc") || is_chunk[1]) &&
       is_1500_1990[2]) {
     return(list(case = "decadal_single_plus_1500_1990", var = unique(vars), n = 2))
   }
-  stop("Filename set does not match any expected ordered pattern. Have the filenames been altered?")
+  stop("Filename set does not match any expected ordered pattern. Have you changed the filenames?")
 }
 
 #' Imports the TraCE-Sahul dataset
@@ -73,7 +61,7 @@ classify_TraCESahul <- function(files) {
 #' The function will stop if \code{x} is not a file.path or series of file.paths.
 #'
 #' The function will work with the subsets of the decadal data
-#' e.g \emph{TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_000001.nc}
+#' e.g \emph{TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_01.nc}
 #' provided that they haven't been renamed!
 #'
 #' @note
@@ -92,101 +80,63 @@ classify_TraCESahul <- function(files) {
 #'
 #' @examples
 #' \dontrun{
-#' fn <- "TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_000001.nc"
+#' fn <- "TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_01.nc"
 #' pr_chunk01 <- import_TraCESahul(fn)
 #' pr_chunk01
 #' }
 #' @export
 #'
 import_TraCESahul <- function(files) {
-  if (!requireNamespace("terra", quietly = TRUE)) {
-    stop("Package 'terra' is required for import_TraCESahul()")
-  }
-  if (!requireNamespace("data.table", quietly = TRUE)) {
-    stop("Package 'data.table' is required for import_TraCESahul()")
-  }
-  # check the files
+  if (!requireNamespace("terra", quietly = TRUE)) stop("Package 'terra' is required.")
+  if (!requireNamespace("data.table", quietly = TRUE)) stop("Package 'data.table' is required.")
   out <- classify_TraCESahul(files)
-
-  handle_decadal_chunks <- function(files) {
-    path <- system.file("extdata", "TraCE-Sahul_timesteps.csv",
-                        package = "TraCESahulMisc")
-    data <- data.table::fread(path, stringsAsFactors = FALSE)
-    ds <- terra::rast(files)
-    terra::depth(ds) <- rep(1:12, times = terra::nlyr(ds)/12)
+  set_monthly_metadata <- function(ds, years) {
+    terra::depth(ds) <- rep(1:12, times = terra::nlyr(ds) / 12)
     terra::depthName(ds) <- "Month"
     terra::depthUnit(ds) <- "calendar month"
-    terra::time(ds) <- data[["Year"]]
+    terra::time(ds) <- years
+    ds
+  }
+  load_timestep_table <- function() {
+    path <- system.file("extdata", "TraCE-Sahul_timesteps.csv", package = "TraCESahulMisc")
+    data.table::fread(path)
+  }
+  get_monthly_years <- function() rep(1500:1989, each = 12)
+  handle_decadal_core <- function(f) {
+    data <- load_timestep_table()
+    ds   <- terra::rast(f)
+    ds   <- set_monthly_metadata(ds, data[["Year"]])
     assign("TraCESahul_time_steps", data, envir = .GlobalEnv)
-    return(ds)
+    ds
   }
-  handle_two_file_combo <- function(files) {
-    path <- system.file("extdata", "TraCE-Sahul_timesteps.csv",
-                        package = "TraCESahulMisc")
-    data <- data.table::fread(path, stringsAsFactors = FALSE)
-    ds <- terra::rast(files[1])
-    terra::depth(ds) <- rep(1:12, times = terra::nlyr(ds)/12)
-    terra::depthName(ds) <- "Month"
-    terra::depthUnit(ds) <- "calendar month"
-    terra::time(ds) <- data[["Year"]]
-    ds_m <- terra::rast(files[2])
-    terra::depth(ds_m) <- rep(1:12, times = terra::nlyr(ds_m)/12)
-    terra::depthName(ds_m) <- "Month"
-    terra::depthUnit(ds_m) <- "calendar month"
-    terra::time(ds_m) <- rep(1500:1989, each = 12)
-    ds_c <- c(ds, ds_m)
-    assign("TraCESahul_time_steps", data, envir = .GlobalEnv)
-    return(ds_c)
-  }
-  handle_1500_1990 <- function(files) {
-    ds <- terra::rast(files)
-    terra::depth(ds) <- rep(1:12, times = terra::nlyr(ds)/12)
-    terra::depthName(ds) <- "Month"
-    terra::depthUnit(ds) <- "calendar month"
-    terra::time(ds) <- rep(1500:1989, each = 12)
-    return(ds)
-  }
-  handle_single_decadal <- function(files,...) {
-    path <- system.file("extdata", "TraCE-Sahul_timesteps.csv",
-                        package = "TraCESahulMisc")
-    data <- data.table::fread(path, stringsAsFactors = FALSE)
+  handle_decadal_single <- function(f) {
+    data <- load_timestep_table()
     chunk <- unname(out$chunk_num)
-    data <- data.table::copy(data)[file_step == chunk, ]
-    ds <- terra::rast(files)
-    terra::depth(ds) <- rep(1:12, times = terra::nlyr(ds)/12)
-    terra::depthName(ds) <- "Month"
-    terra::depthUnit(ds) <- "calendar month"
-    terra::time(ds) <- data[["Year"]]
+    data <- data[data$file_step == chunk]
+    ds <- terra::rast(f)
+    ds <- set_monthly_metadata(ds, data$Year)
     assign("TraCESahul_time_steps", data, envir = .GlobalEnv)
-    return(ds)
+    ds
   }
-  handle_chunks_plus <- function(files) {
-    path <- system.file("extdata", "TraCE-Sahul_timesteps.csv",
-                        package = "TraCESahulMisc")
-    data <- data.table::fread(path, stringsAsFactors = FALSE)
-    ds <- terra::rast(files[-length(files)])
-    terra::depth(ds) <- rep(1:12, times = terra::nlyr(ds)/12)
-    terra::depthName(ds) <- "Month"
-    terra::depthUnit(ds) <- "calendar month"
-    terra::time(ds) <- data[["Year"]]
-    ds_m <- terra::rast(files[length(files)])
-    terra::depth(ds_m) <- rep(1:12, times = terra::nlyr(ds_m)/12)
-    terra::depthName(ds_m) <- "Month"
-    terra::depthUnit(ds_m) <- "calendar month"
-    terra::time(ds_m) <- rep(1500:1989, each = 12)
-    ds_c <- c(ds, ds_m)
+  handle_monthly_only <- function(f) {
+    ds <- terra::rast(f)
+    set_monthly_metadata(ds, get_monthly_years())
+  }
+  handle_two_sets <- function(f_decadal, f_monthly) {
+    data <- load_timestep_table()
+    ds1  <- set_monthly_metadata(terra::rast(f_decadal), data$Year)
+    ds2  <- set_monthly_metadata(terra::rast(f_monthly), get_monthly_years())
     assign("TraCESahul_time_steps", data, envir = .GlobalEnv)
-    return(ds_c)
+    c(ds1, ds2)
   }
-  # processing dispatch
-  switch(
-    out$case,
-    "decadal_chunks_6" = handle_decadal_chunks(files),
-    "decadal_single_plus_1500_1990" = handle_two_file_combo(files),
-    "1500_1990_single" = handle_1500_1990(files),
-    "decadal_single" = handle_single_decadal(files),
-    "chunks_plus_1500_1990" = handle_chunks_plus(files),
-    stop("Unhandled case")
+  switch(out$case,
+         "decadal_chunks_6" = handle_decadal_core(files),
+         "decadal_single_plus_1500_1990" = handle_two_sets(files[1], files[2]),
+         "1500_1990_single" = handle_monthly_only(files),
+         "decadal_single" = handle_decadal_single(files),
+         "chunks_plus_1500_1990" = handle_two_sets(files[-length(files)], files[length(files)]),
+    stop("Unhandled case.")
   )
 }
+
 
