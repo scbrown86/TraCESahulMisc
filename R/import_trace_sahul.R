@@ -70,7 +70,8 @@ classify_TraCESahul <- function(files) {
 #' filepaths must be given in order (e.g. 01.nc, 02.nc, 03.nc, 04.nc, 05.nc, 06.nc, 1500_1990_biascorr.nc)
 #'
 #' @import ncdfCF
-#' @import terra
+#' @import data.table
+#' @importFrom terra rast time depth depthName depthUnit
 #' @importFrom pbapply pblapply
 #'
 #' @param files A character vector of filepaths pointing to the \emph{TraCE-Sahul} dataset(s).
@@ -116,6 +117,7 @@ import_TraCESahul <- function(files) {
     terra::depthName(ds) <- "Month"
     terra::depthUnit(ds) <- "calendar month"
     terra::time(ds) <- years
+    attr(ds, "TraCESahul") <- TRUE
     ds
   }
   load_timestep_table <- function() {
@@ -130,22 +132,22 @@ import_TraCESahul <- function(files) {
     assign("TraCESahul_time_steps", data, envir = .GlobalEnv)
     ds
   }
-  handle_decadal_single <- function(f) {
+  handle_decadal_single <- function(f,...) {
     data <- load_timestep_table()
     chunk <- unname(out$chunk_num)
     if (!is.na(chunk)) {
-      data <- data[file_step == chunk, ]
+      data <- data[data$file_step == chunk, ]
     }
     ds <- terra::rast(f)
     ds <- set_monthly_metadata(ds, data$Year)
     assign("TraCESahul_time_steps", data, envir = .GlobalEnv)
     ds
   }
-  handle_monthly_only <- function(f) {
+  handle_monthly_only <- function(f,...) {
     ds <- terra::rast(f)
     set_monthly_metadata(ds, get_monthly_years())
   }
-  handle_two_sets <- function(f_decadal, f_monthly) {
+  handle_two_sets <- function(f_decadal, f_monthly,...) {
     data <- load_timestep_table()
     ds1  <- set_monthly_metadata(terra::rast(f_decadal), data$Year)
     ds2  <- set_monthly_metadata(terra::rast(f_monthly), get_monthly_years())
