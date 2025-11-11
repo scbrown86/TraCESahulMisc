@@ -41,7 +41,7 @@ classify_TraCESahul <- function(files) {
   if (n == 2 &&
       (endsWith(bfiles[1], "21k_1500CE_biascorr.nc") || is_chunk[1]) &&
       is_1500_1990[2]) {
-    return(list(case = "decadal_single_plus_1500_1990", var = unique(vars), n = 2))
+    return(list(case = "decadal_single_plus_1500_1990", var = unique(vars), n = 2, chunk_num = chunk_nums[1]))
   }
   stop("Filename set does not match any expected ordered pattern. Have you changed the filenames?")
 }
@@ -149,6 +149,8 @@ import_TraCESahul <- function(files) {
   }
   handle_two_sets <- function(f_decadal, f_monthly,...) {
     data <- load_timestep_table()
+    chunk <- unname(out$chunk_num)
+    data <- data[data$file_step == chunk, ]
     ds1  <- set_monthly_metadata(terra::rast(f_decadal), data$Year)
     ds2  <- set_monthly_metadata(terra::rast(f_monthly), get_monthly_years())
     assign("TraCESahul_time_steps", data, envir = .GlobalEnv)

@@ -4,7 +4,7 @@
 \alias{summarise_TraCESahul}
 \title{summarise_TraCESahul}
 \usage{
-summarise_TraCESahul(x, type = "annual", sumfun = "mean", ...)
+summarise_TraCESahul(x, type = "annual", sumfun = "mean", window = NULL, ...)
 }
 \arguments{
 \item{x}{a \code{\link[terra:rast]{SpatRast}}. \strong{Must} be created using \code{\link{import_TraCESahul}}.}
@@ -13,13 +13,27 @@ summarise_TraCESahul(x, type = "annual", sumfun = "mean", ...)
 
 \item{sumfun}{summary function to be applied. See \code{\link[terra]{tapp}} for details. Default: "mean".}
 
+\item{window}{the size of the window to aggregate across. Default = NULL.
+\emph{e.g.} setting a value of 30 means that data will be averaged over 30 years (\emph{i.e.} 3 decadal timesteps, or 30 years for post-1500 data)}
+
 \item{...}{additional argument to \code{\link[terra]{tapp}}}
 }
 \value{
 a \code{\link[terra:rast]{SpatRast}} summarised over the chosen value
 }
 \description{
-FUNCTION_DESCRIPTION
+Summarise TraCESahul climate data into annual, monthly, or seasonal periods.
+
+This function aggregates \emph{TraCESahul} SpatRaster data by year, month, or
+austral season. Monthly and seasonal summaries can be calculated across the
+entire record or within user defined windows based on the time dimension.
+Seasonal grouping follows standard austral seasons, with DJF treated
+correctly when time intervals are uneven. The summarising function may be
+any supported \code{\link[terra:tapp]{terra::tapp}} method or a custom
+function.
+
+Data before and after 1500 CE are kept separate for all summary types and
+are \emph{never} combined in the same aggregation.
 }
 \examples{
 \dontrun{
