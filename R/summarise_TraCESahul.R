@@ -55,6 +55,36 @@ summarise_TraCESahul <- function(x, type = "annual", sumfun = "mean", window = N
     names(out) <- paste0("Year_", terra::time(out))
     return(out)
   }
+  # annual window; bin by right-aligned years within each zone
+  if (type == "annual" && !is.null(window)) {
+    grp <- character(length(years))
+    for (z in c("pre", "post")) {
+      idx <- which(ifelse(years < 1500, "pre", "post") == z)
+      if (length(idx) == 0) next
+      yrs_z <- years[idx]
+      ymin <- min(yrs_z)
+      ymax <- max(yrs_z)
+      nwin <- floor((ymax - ymin + 1) / window)
+      if (nwin == 0) next
+      # define right-aligned windows
+      win_ends <- ymax - ((nwin:1 - 1) * window)
+      win_starts <- win_ends - window + 1
+      win_map <- mapply(function(s, e) s:e, win_starts, win_ends, SIMPLIFY = FALSE)
+      win_id <- integer(length(yrs_z))
+      for (i in seq_along(win_map)) {
+        win_id[yrs_z %in% win_map[[i]]] <- i
+      }
+      keep <- win_id > 0
+      grp[idx[keep]] <- paste0(z, "_", win_id[keep])
+    }
+    # only keep layers in a full window
+    keep_layers <- grp != ""
+    out <- terra::tapp(x[[keep_layers]], index = grp[keep_layers], fun = sumfun, ...)
+    rep_time <- tapply(years[keep_layers], grp[keep_layers], max)
+    terra::time(out) <- as.numeric(rep_time[names(out)])
+    names(out) <- names(out)
+    return(out)
+  }
   # define timezones for pre/post 1500
   zone_monthly <- ifelse(years < 1500, "pre", "post")
   # monthly, separate pre/post, 12 or 24 layers
