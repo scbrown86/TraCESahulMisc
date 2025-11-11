@@ -13,7 +13,7 @@
 #' sumfun = "mean")
 #' }
 #' @export
-#' @importFrom terra rast tapp time depth
+#' @importFrom terra rast tapp time depth names nlyr depthName depthUnit
 #'
 summarise_TraCESahul <- function(x, type = "annual", sumfun = "mean",
                                  window = NULL,
@@ -41,10 +41,32 @@ summarise_TraCESahul <- function(x, type = "annual", sumfun = "mean",
     return(ann)
   }
   # monthly
-  if (type == "monthly") {
-    #TODO: add window check, and summarise by month here
-    # if month but window=NULL use months from above as index to tapp
-    # if window != NULL, cut index into bins, and then summarise by months
+  if (type == "monthly" && is.null(window)) {
+    mon <- terra::tapp(x, index = months, fun = sumfun, ...)
+    terra::time(mon) <- rep(median(unique(years)), 12)
+    names(mon) <- month.abb
+    terra::depth(mon) <- 1:12
+    terra::depthName(mon) <- "Month"
+    terra::depthUnit(mon) <- "month"
+    return(mon)
+  } else if (type == "monthly" && is.numeric(window)) {
+    n <- terra::nlyr(x)
+    breaks <- rep(seq(1, n + window, by = window), each = window)
+    breaks <- breaks[1:n]
+    if (n %% window != 0) {
+      mx <- min(table(breaks))
+      warning(sprintf("Final window not divisible by number of layers. Final window calculated on %s layers.", mx),
+              call. = TRUE, immediate. = TRUE)
+    }
+    grp <- paste0(months, "_", breaks)
+    stopifnot("Too many groups?" = terra::nlyr(x) == length(grp))
+    mon <- terra::tapp(x, index = grp, fun = sumfun, ...)
+    terra::time(mon) <- rep(tapply(years, breaks, function(z) max(z)), each = 12)
+    names(mon) <- paste0(month.abb,"_", terra::time(mon))
+    terra::depth(mon) <- rep(1:12, each = terra::nlyr(mon)/12)
+    terra::depthName(mon) <- "Month"
+    terra::depthUnit(mon) <- "month"
+    return(mon)
   }
   # seasonal
   n <- length(months)
@@ -69,7 +91,7 @@ summarise_TraCESahul <- function(x, type = "annual", sumfun = "mean",
       rep_year[i] <- years[i]
     }
   }
-  if (is.null(season_window)) {
+  if (is.null(window)) {
     # summarise across all seasons (so only 4 returned values)
     grp <- season_name
     out <- terra::tapp(x, grp, fun = sumfun, ...)
@@ -78,10 +100,10 @@ summarise_TraCESahul <- function(x, type = "annual", sumfun = "mean",
     terra::depthUnit(out) <- ""
     return(out)
   }
-  # Compute number of windows for season_window
+  # Compute number of seasonal windows
   yr_min <- min(rep_year)
   yr_max <- max(rep_year)
-  breaks <- seq(yr_min, yr_max + season_window, by = season_window)
+  breaks <- seq(yr_min, yr_max + window, by = window)
   window_id <- cut(rep_year, breaks = breaks, include.lowest = TRUE, labels = FALSE)
   # Final group = season + window
   grp <- paste0(season_name, "_", window_id)
