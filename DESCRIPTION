@@ -22,6 +22,7 @@ RoxygenNote: 7.3.3
 Imports: 
     data.table,
     ncdfCF (>= 0.7.0.9000),
+    pbapply,
     terra (>= 1.8-50),
     utils
 Suggests: 

@@ -31,6 +31,7 @@
 #' }
 #' @export
 #' @importFrom terra rast tapp time depth names nlyr depthName depthUnit
+#' @importFrom stats median
 #'
 summarise_TraCESahul <- function(x, type = "annual", sumfun = "mean", window = NULL, ...) {
   stopifnot("x must be output from `import_TraCESahul`" = isTRUE(attr(x, "TraCESahul")))
@@ -91,7 +92,7 @@ summarise_TraCESahul <- function(x, type = "annual", sumfun = "mean", window = N
   if (type == "monthly" && is.null(window)) {
     grp <- paste0(zone_monthly, "_", months)
     out <- terra::tapp(x, index = grp, fun = sumfun, ...)
-    rep_time <- tapply(years, grp, median)
+    rep_time <- tapply(years, grp, stats::median)
     terra::time(out) <- as.numeric(rep_time[names(out)])
     names(out) <- names(out)
     terra::depth(out) <- rep(1:12, length.out = terra::nlyr(out))
@@ -146,7 +147,7 @@ summarise_TraCESahul <- function(x, type = "annual", sumfun = "mean", window = N
   if (type == "seasonal" && is.null(window)) {
     grp <- paste0(zone_seasonal, "_", season_name)
     out <- terra::tapp(x, grp, fun = sumfun, ...)
-    rep_time <- tapply(rep_year, grp, median)
+    rep_time <- tapply(rep_year, grp, stats::median)
     terra::time(out) <- as.numeric(rep_time[names(out)])
     names(out) <- names(out)
     terra::depthName(out) <- "Season"

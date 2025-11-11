@@ -6,6 +6,7 @@
 #' importing the data. This function is not exported, and should not ever need to
 #' be called directly by the user.
 #'
+#' @noRd
 classify_TraCESahul <- function(files) {
   stopifnot(length(files) > 0)
   bfiles <- basename(files)
