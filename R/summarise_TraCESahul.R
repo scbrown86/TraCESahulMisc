@@ -49,7 +49,7 @@ summarise_TraCESahul <- function(x, type = "annual", sumfun = "mean", window = N
   months <- terra::depth(x)
   n <- terra::nlyr(x)
   # annual
-  if (type == "annual") {
+  if (type == "annual" && is.null(window)) {
     out <- terra::tapp(x, index = years, fun = sumfun, ...)
     terra::time(out) <- unique(years)
     names(out) <- paste0("Year_", terra::time(out))
