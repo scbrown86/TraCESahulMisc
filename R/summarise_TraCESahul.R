@@ -1,24 +1,27 @@
-#' @title summarise_TraCESahul
-#' @description Summarise TraCESahul climate data into annual, monthly, or seasonal periods.
+#' @title Summarise \emph{TraCESahul} climate data
 #'
-#' This function aggregates \emph{TraCESahul} SpatRaster data by year, month, or
-#' austral season. Monthly and seasonal summaries can be calculated across the
-#' entire record or within user defined windows based on the time dimension.
-#' Seasonal grouping follows standard austral seasons, with DJF treated
-#' correctly when time intervals are uneven. The summarising function may be
-#' any supported \code{\link[terra:tapp]{terra::tapp}} method or a custom
-#' function.
+#' @description Aggregate an imported \emph{TraCESahul} SpatRaster to annual, monthly, or seasonal summaries.
+#' Monthly and seasonal summaries can either be taken across the full record or grouped into user-defined
+#' windows of years. Windows are right-aligned, and any incomplete trailing windows are excluded.
+#' Seasonal summaries use austral seasons, with DJF December handled as part of the following year.
+#' Data from before and after 1500 CE are always processed separately and never mixed.
 #'
-#' Data before and after 1500 CE are kept separate for all summary types and
-#' are \emph{never} combined in the same aggregation.
+#' @param x A SpatRaster imported using \code{\link{import_TraCESahul}} with a \code{TraCESahul} attribute.
+#' @param type Character; one of \code{"annual"}, \code{"monthly"}, or \code{"seasonal"} specifying the summary type.
+#' @param sumfun A function or character string indicating the summarising function to use. Can be any
+#' function supported by \code{\link[terra:tapp]{terra::tapp}} or a custom function.
+#' @param window Numeric; optional number of years to group together for monthly or seasonal summaries.
+#' Must be greater than or equal to 10. Windows are right-aligned and incomplete windows are excluded.
+#' @param ... Additional arguments passed to \code{\link[terra:tapp]{terra::tapp}}.
 #'
-#' @param x a \code{\link[terra:rast]{SpatRast}}. \strong{Must} be created using \code{\link{import_TraCESahul}}.
-#' @param type which timesteps to summarise over. Can be seasonal or annual. Default: "annual".
-#' @param sumfun summary function to be applied. See \code{\link[terra]{tapp}} for details. Default: "mean".
-#' @param window the size of the window to aggregate across. Default = NULL.
-#' \emph{e.g.} setting a value of 30 means that data will be averaged over 30 years (\emph{i.e.} 3 decadal timesteps, or 30 years for post-1500 data)
-#' @param ... additional argument to \code{\link[terra]{tapp}}
-#' @return a \code{\link[terra:rast]{SpatRast}} summarised over the chosen value
+#' @return A SpatRaster summarised according to the specified type and window. Monthly outputs will have
+#' 12 layers per timezone (pre- or post-1500), and seasonal outputs will have four layers per timezone when
+#' \code{window = NULL}.
+#'
+#' @details Right-aligned windows ensure that the last window ends on the maximum year in the data,
+#' without including incomplete periods. For DJF December is considered part of the following year,
+#' ensuring correct austral season alignment.
+
 #' @examples
 #' \dontrun{
 #' pr_summary <- summarise_TraCEShaul(
@@ -33,11 +36,10 @@ summarise_TraCESahul <- function(x, type = "annual", sumfun = "mean", window = N
   stopifnot("x must be output from `import_TraCESahul`" = isTRUE(attr(x, "TraCESahul")))
   stopifnot(
     "window must be NULL or numeric > 10" =
-      (is.null(window)) || (is.numeric(window) && window > 10)
+      (is.null(window)) || (is.numeric(window) && window >= 10)
   )
-  type <- match.arg(type, choices = c("annual", "monthly", "seasonal"),
-                    several.ok = FALSE)
-
+  type <- match.arg(type, choices = c("annual", "monthly", "seasonal"), several.ok = FALSE)
+  # make sure sumfun is suitable
   if (is.character(sumfun) && !sumfun %in%
       c("sum", "mean", "median", "modal", "which", "which.min", "which.max",
         "min", "max", "prod", "any", "all", "sd", "std", "first")) {
@@ -53,46 +55,50 @@ summarise_TraCESahul <- function(x, type = "annual", sumfun = "mean", window = N
     names(out) <- paste0("Year_", terra::time(out))
     return(out)
   }
-  # compute pre-post 1500
-  zone <- ifelse(years < 1500, "pre", "post")
-  # monthly no window
+  # define timezones for pre/post 1500
+  zone_monthly <- ifelse(years < 1500, "pre", "post")
+  # monthly, separate pre/post, 12 or 24 layers
   if (type == "monthly" && is.null(window)) {
-    grp <- paste0(zone, "_", months) # ensure pre-post 1500 split
+    grp <- paste0(zone_monthly, "_", months)
     out <- terra::tapp(x, index = grp, fun = sumfun, ...)
     rep_time <- tapply(years, grp, median)
-    terra::time(out) <- as.numeric(rep_time[names(out)])
-    names(out) <- names(out)
-    # use terra::depth for months
-    n_out <- terra::nlyr(out)
-    terra::depth(out) <- rep(1:12, length.out = n_out)
-    terra::depthName(out) <- "Month"
-    terra::depthUnit(out) <- "month"
-    return(out)
-  }
-  # monthly windowed
-  if (type == "monthly" && !is.null(window)) {
-    grp <- character(n)
-    for (z in c("pre", "post")) {
-      idx <- which(zone == z)
-      if (length(idx) == 0) next
-      nz <- length(idx)
-      if (nz %% window != 0) {
-        warning(
-          sprintf("Last window incomplete in %s1500 zone: %s layers.",
-                  ifelse(z == "pre", "<", ">="),
-                  nz - floor(nz / window) * window),
-          call. = TRUE, immediate. = TRUE)
-      }
-      window_id <- rep(seq_len(ceiling(nz / window)), each = window)[1:nz]
-      grp[idx] <- paste0("M", months[idx], "_", z, "_", window_id)
-    }
-    out <- terra::tapp(x, index = grp, fun = sumfun, ...)
-    rep_time <- tapply(years, grp, max)
     terra::time(out) <- as.numeric(rep_time[names(out)])
     names(out) <- names(out)
     terra::depth(out) <- rep(1:12, length.out = terra::nlyr(out))
     terra::depthName(out) <- "Month"
     terra::depthUnit(out) <- "month"
+    return(out)
+  }
+  # monthly window; bin by right-aligned years within each zone
+  if (type == "monthly" && !is.null(window)) {
+    grp <- character(n)
+    for (z in c("pre", "post")) {
+      idx <- which(zone_monthly == z)
+      if (length(idx) == 0) next
+      yrs_z <- years[idx]
+      ymin <- min(yrs_z)
+      ymax <- max(yrs_z)
+      nwin <- floor((ymax - ymin + 1)/window)
+      if (nwin == 0) next
+      win_ends <- ymax - ((nwin:1 - 1) * window)
+      win_starts <- win_ends - window + 1
+      win_map <- mapply(function(s, e) s:e, win_starts, win_ends, SIMPLIFY = FALSE)
+      win_id <- integer(length(yrs_z))
+      for (i in seq_along(win_map)) {
+        win_id[yrs_z %in% win_map[[i]]] <- i
+      }
+      keep <- win_id > 0
+      grp[idx[keep]] <- paste0(month.abb[months[idx[keep]]], "_", z, "_", win_id[keep])
+    }
+    # only keep layers in a group
+    keep_layers <- grp != ""
+    out <- terra::tapp(x[[keep_layers]], index = grp[keep_layers], fun = sumfun, ...)
+    rep_time <- tapply(years[keep_layers], grp[keep_layers], max)
+    terra::time(out) <- as.numeric(rep_time[names(out)])
+    terra::depth(out) <- rep(1:12, length.out = terra::nlyr(out))
+    terra::depthName(out) <- "Month"
+    terra::depthUnit(out) <- "month"
+    names(out) <- names(out)
     return(out)
   }
   # seasonal assignment
@@ -101,20 +107,14 @@ summarise_TraCESahul <- function(x, type = "annual", sumfun = "mean", window = N
   season_name[months %in% c(3, 4, 5)] <- "MAM"
   season_name[months %in% c(6, 7, 8)] <- "JJA"
   season_name[months %in% c(9, 10, 11)] <- "SON"
-  season_year_index <- integer(n)
-  si <- 1L
-  season_year_index[1] <- si
-  for (i in 2:n) {
-    if (months[i] == 12) si <- si + 1L
-    season_year_index[i] <- si
-  }
+  # representative year for seasonal (DJF Dec takes following year if present)
   rep_year <- years
   djf_dec <- which(season_name == "DJF" & months == 12)
   rep_year[djf_dec] <- ifelse(djf_dec < n, years[djf_dec + 1], years[djf_dec])
-  zone <- ifelse(rep_year < 1500, "pre", "post") # pre-post 1500 split
-  # seasonal no window
+  zone_seasonal <- ifelse(rep_year < 1500, "pre", "post")
+  # seasonal, separate pre/post, up to 8 layers
   if (type == "seasonal" && is.null(window)) {
-    grp <- paste0(zone, "_", season_name) # ensure pre-post 1500 split
+    grp <- paste0(zone_seasonal, "_", season_name)
     out <- terra::tapp(x, grp, fun = sumfun, ...)
     rep_time <- tapply(rep_year, grp, median)
     terra::time(out) <- as.numeric(rep_time[names(out)])
@@ -123,22 +123,31 @@ summarise_TraCESahul <- function(x, type = "annual", sumfun = "mean", window = N
     terra::depthUnit(out) <- ""
     return(out)
   }
-  # seasonal with window
+  # seasonal window; bin by right-aligned years within each zone
   if (type == "seasonal" && !is.null(window)) {
     grp <- character(n)
     for (z in c("pre", "post")) {
-      idx <- which(zone == z)
+      idx <- which(zone_seasonal == z)
       if (length(idx) == 0) next
-      yr_min_z <- min(rep_year[idx])
-      yr_max_z <- max(rep_year[idx])
-      breaks_z <- seq(yr_min_z, yr_max_z + window, by = window)
-      window_id_z <- cut(rep_year[idx], breaks = breaks_z,
-                         include.lowest = TRUE, labels = FALSE)
-      grp[idx] <- paste0(season_name[idx], "_", z, "_", window_id_z)
+      yrs_z <- rep_year[idx]
+      ymin <- min(yrs_z)
+      ymax <- max(yrs_z)
+      nwin <- floor((ymax - ymin + 1)/window)
+      if (nwin == 0) next
+      win_ends <- ymax - ((nwin:1 - 1) * window)
+      win_starts <- win_ends - window + 1
+      win_map <- mapply(function(s, e) s:e, win_starts, win_ends, SIMPLIFY = FALSE)
+      win_id <- integer(length(yrs_z))
+      for (i in seq_along(win_map)) {
+        win_id[yrs_z %in% win_map[[i]]] <- i
+      }
+      keep <- win_id > 0
+      grp[idx[keep]] <- paste0(season_name[idx[keep]], "_", z, "_", win_id[keep])
     }
-    out <- terra::tapp(x, grp, fun = sumfun, ...)
-    yr_lookup <- tapply(rep_year, grp, max)
-    terra::time(out) <- as.numeric(yr_lookup[names(out)])
+    keep_layers <- grp != ""
+    out <- terra::tapp(x[[keep_layers]], index = grp[keep_layers], fun = sumfun, ...)
+    rep_time <- tapply(rep_year[keep_layers], grp[keep_layers], max)
+    terra::time(out) <- as.numeric(rep_time[names(out)])
     names(out) <- names(out)
     return(out)
   }
