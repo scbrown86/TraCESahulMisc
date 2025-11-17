@@ -193,9 +193,9 @@ pair_obs <- function(data, ras_list, mask_layer, ras_time, buff_width = NULL,
   }
   # optional warning about snapping
   if (!is.null(dist_cut)) {
-    warning(
-      sprintf("Lon/Lat points will be snapped to nearest points on rasters. Cutoff distance = %d km.", dist_cut),
-      call. = FALSE, immediate. = TRUE
+    message(
+      sprintf("Lon/Lat points will be snapped to nearest points on rasters. Cutoff distance = %d km.", dist_cut)#,
+      #call. = FALSE, immediate. = TRUE
     )
   }
   # check raster geometry consistency
@@ -210,9 +210,8 @@ pair_obs <- function(data, ras_list, mask_layer, ras_time, buff_width = NULL,
   terra::time(mask_layer) <- ras_time
   # extract
   if (cores > 1L) {
-    message(sprintf("\nExtracting data from rasters in parallel using %s cores and future.apply", cores))
-    warning("all rasters must be wrapped before parallel extraction. Wrapping now.",
-            call. = FALSE, immediate. = TRUE)
+    message(sprintf("Extracting data from rasters in parallel using %s cores and future.apply", cores))
+    message("All rasters must be wrapped before parallel extraction. Wrapping now.")
     ras_names <- names(ras_list)
     ras_list <- pbapply::pblapply(seq_along(ras_list), function(x) {
       terra::wrap(ras_list[[x]])
@@ -220,7 +219,7 @@ pair_obs <- function(data, ras_list, mask_layer, ras_time, buff_width = NULL,
     names(ras_list) <- ras_names
     mask_layer <- terra::wrap(mask_layer)
   } else {
-    message("\nExtracting data from rasters sequentially")
+    message("Extracting data from rasters sequentially")
   }
   wkt_proj <- 'PROJCS["Sahul_Lambert_Azimuthal",
   GEOGCS["GCS_WGS_1984",
@@ -247,46 +246,30 @@ pair_obs <- function(data, ras_list, mask_layer, ras_time, buff_width = NULL,
     wkt_proj = wkt_proj,
     n_cores = cores)
   # Send warning if any records were removed.
-  if (length(unique(env_pairing[["ID"]])) != length(unique(data[["ID"]]))) {
+  # Count removed records
+  removed_ids <- setdiff(unique(data[["ID"]]), unique(env_pairing[["ID"]]))
+  n_removed <- length(removed_ids)
+  if (n_removed > 0L) {
+    # Reason message depends on whether dist_cut was supplied
     reason <- if (is.null(dist_cut)) {
       "no temporal match or extraction error"
     } else {
       "no temporal match, > cutoff distance, or extraction error"
     }
-    warning(sprintf("\nThere were %s samples removed (%s).",
-                    n_removed, reason),
-            immediate. = TRUE)
-    warning("\nSamples removed: ", paste(
-      unique(data[["ID"]])[!unique(data[["ID"]]) %in%
-                             unique(env_pairing[["ID"]])], collapse = ", "),
-      immediate. = TRUE)
+    warning(
+      sprintf("\nThere were %d samples removed (%s).", n_removed, reason),
+      immediate. = TRUE
+    )
+    warning(
+      sprintf("Samples removed: %s", paste(removed_ids, collapse = ", ")),
+      immediate. = TRUE
+    )
   }
   # Round the extracted env variables
   cols <- names(env_pairing)[-c(1:4)] # exc ID, Lon, Lat, Year
   env_pairing[,(cols) := round(.SD, prec), .SDcols = cols]
   env_pairing <- unique(env_pairing, by = c("ID", cols))
-  message("\nDone!")
   return(env_pairing)
-}
-
-
-#' check_geom
-#'
-#' @param x list of rasters
-#'
-#' @returns BOOL
-#' @noRd
-#'
-check_geom <- function(x) {
-  ok <- vapply(
-    x[-1],
-    function(r) terra::compareGeom(x[[1]], r, stopOnError = FALSE),
-    logical(1)
-  )
-  if (!all(ok)) {
-    stop("Rasters do not share identical geometry.")
-  }
-  invisible(TRUE)
 }
 
 #' @importFrom future plan multisession
@@ -327,10 +310,8 @@ parallel_env_match <- function(data, ras_list, mask_layer, ras_time, window,
           coords_proj <- terra::project(coords, y = wkt_proj)
           ras_points  <- terra::as.points(template_rast, values = FALSE, na.rm = TRUE)
           ras_points  <- terra::project(ras_points, y = wkt_proj)
-
           snap_idx <- terra::nearest(coords_proj, ras_points)[1, ]
           snap_dist <- as.vector(terra::distance(coords_proj, snap_idx, unit = "km"))
-
           if (snap_dist <= dist_cut) {
             coords_sf <- sf::st_as_sf(coords_proj)
             sf::st_geometry(coords_sf) <- sf::st_as_sfc(
@@ -352,11 +333,11 @@ parallel_env_match <- function(data, ras_list, mask_layer, ras_time, window,
           ras_points <- terra::as.points(template_rast, values = FALSE, na.rm = TRUE)
           ras_proj   <- terra::project(ras_points, y = wkt_proj)
           coords_proj <- terra::project(coords, y = wkt_proj)
-          nn <- FNN::get.knnx(
+          nn <- as.vector(FNN::get.knnx(
             data  = terra::crds(ras_proj),
             query = terra::crds(coords_proj),
             k     = neigh
-          )$nn.index
+          )$nn.index)
           nei <- terra::cellFromXY(template_rast,
                                    xy = terra::crds(ras_points[nn, ]))
           nr <- TRUE
@@ -431,8 +412,9 @@ parallel_env_match <- function(data, ras_list, mask_layer, ras_time, window,
             data.table::merge.data.table(x, y, by = c("ID", "Year"),
                                          all.x = TRUE, all.y = TRUE),
           ext)
-        mergedDT[, Lon := terra::crds(coords)[, 1]]
-        mergedDT[, Lat := terra::crds(coords)[, 2]]
+        crds_xy <- terra::crds(coords)
+        mergedDT[, Lon := crds_xy[, 1]]
+        mergedDT[, Lat := crds_xy[, 2]]
         neworder <- c("ID", "Lon", "Lat", "Year", names(ras_list), "LandSea")
         data.table::setcolorder(mergedDT, neworder)
         return(mergedDT)
@@ -459,6 +441,25 @@ parallel_env_match <- function(data, ras_list, mask_layer, ras_time, window,
     return(data.table::data.table())
   }
   return(data.table::rbindlist(res_list, use.names = TRUE, fill = TRUE))
+}
+
+#' check_geom
+#'
+#' @param x list of rasters
+#'
+#' @returns BOOL
+#' @noRd
+#'
+check_geom <- function(x) {
+  ok <- vapply(
+    x[-1],
+    function(r) terra::compareGeom(x[[1]], r, stopOnError = FALSE),
+    logical(1)
+  )
+  if (!all(ok)) {
+    stop("Rasters do not share identical geometry.")
+  }
+  invisible(TRUE)
 }
 
 #' @param ras_time ras_time
