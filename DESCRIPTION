@@ -22,8 +22,12 @@ RoxygenNote: 7.3.3
 Imports: 
     data.table,
     fastbioclim,
+    FNN,
+    future,
+    future.apply,
     ncdfCF (>= 0.7.0.9000),
     pbapply,
+    sf,
     terra (>= 1.8-50),
     utils
 Suggests: 
