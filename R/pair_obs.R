@@ -234,12 +234,27 @@ pair_obs <- function(data, ras_list, mask_layer, ras_time, buff_width = NULL,
   PARAMETER["Central_Meridian",135],
   PARAMETER["Latitude_Of_Origin",-20],
   UNIT["Meter",1.0]]'
-  env_pairing <- parallel_env_match(data, window = window, n_cores = cores,
-                                    ...)
+  env_pairing <- parallel_env_match(
+    data = data,
+    ras_list = ras_list,
+    mask_layer = mask_layer,
+    ras_time = ras_time,
+    window = window,
+    neigh = neigh,
+    buff_width = buff_width,
+    dist_cut = dist_cut,
+    summ_stat = summ_stat,
+    wkt_proj = wkt_proj,
+    n_cores = cores)
   # Send warning if any records were removed.
   if (length(unique(env_pairing[["ID"]])) != length(unique(data[["ID"]]))) {
-    warning(sprintf("\nThere were %s samples removed. They were > cutoff distance.",
-                    length(unique(data[["ID"]])) - length(unique(env_pairing[["ID"]]))),
+    reason <- if (is.null(dist_cut)) {
+      "no temporal match or extraction error"
+    } else {
+      "no temporal match, > cutoff distance, or extraction error"
+    }
+    warning(sprintf("\nThere were %s samples removed (%s).",
+                    n_removed, reason),
             immediate. = TRUE)
     warning("\nSamples removed: ", paste(
       unique(data[["ID"]])[!unique(data[["ID"]]) %in%
@@ -284,175 +299,166 @@ check_geom <- function(x) {
 #' @noRd
 #'
 #' @keywords internal
-parallel_env_match <- function(data, window, n_cores = 1L,...) {
-  old_plan <- future::plan()
-  on.exit(future::plan(old_plan), add = TRUE)
-  future::plan(future::multisession, workers = n_cores)
-  idx <- seq_len(nrow(data))
-  res_list <- future.apply::future_lapply(
-    idx,
-    FUN = function(i,...) {
-      tryCatch(
-        {
-          sub <- data.table::copy(data)[i, ]
+parallel_env_match <- function(data, ras_list, mask_layer, ras_time, window,
+                               neigh, buff_width, dist_cut, summ_stat, wkt_proj,
+                               n_cores = 1L,...) {
+  worker_fun <- function(i) {
+    tryCatch(
+      {
+        sub <- data.table::copy(data)[i, ]
+        # Temporal match
+        ras_sub <- get_time_indices(ras_time, sub$AgeMin, sub$AgeMax, win = window)
+        if (is.null(ras_sub)) {
+          return(NULL)
+        }
+        ras_sub <- ras_sub[!duplicated(ras_sub)]
+        # Template raster
+        if (inherits(ras_list[[1]], "PackedSpatRaster")) {
+          template_rast <- terra::unwrap(ras_list[[1]])[[ras_sub]][[1]]
+          ml <- terra::unwrap(mask_layer)
+        } else {
+          template_rast <- ras_list[[1]][[ras_sub]][[1]]
+          ml <- mask_layer
+        }
+        # Fossil point
+        coords <- terra::vect(sub, geom = c("Lon", "Lat"), crs = "EPSG:4326")
+        # Optional snapping
+        if (!is.null(dist_cut)) {
+          coords_proj <- terra::project(coords, y = wkt_proj)
+          ras_points  <- terra::as.points(template_rast, values = FALSE, na.rm = TRUE)
+          ras_points  <- terra::project(ras_points, y = wkt_proj)
 
-          # Extract the ras_time which fit in the CI of the fossil age
-          ## Always rounds 'down' to oldest interval
-          ras_sub <- get_time_indices(ras_time, sub$AgeMin, sub$AgeMax, win = window)
-          if (is.null(ras_sub)) {
-            return(NULL) # if no matching time index, return NULL
-          }
-          ## remove duplicates if narrow CI results in same layers being returned
-          ras_sub <- ras_sub[!duplicated(ras_sub)]
-          # If length of ras_sub is 1, will return index for age
-          # if (length(ras_sub) ==  1) {
-          #   ras_sub <- which.min(abs(ras_time - sub$Age))
-          # }
-          ## template raster for point alignment
-          if (inherits(ras_list[[1]], "PackedSpatRaster")) {
-            template_rast <- terra::unwrap(ras_list[[1]])[[ras_sub]][[1]]
-            mask_layer <- terra::unwrap(mask_layer) # unwrap mask
+          snap_idx <- terra::nearest(coords_proj, ras_points)[1, ]
+          snap_dist <- as.vector(terra::distance(coords_proj, snap_idx, unit = "km"))
+
+          if (snap_dist <= dist_cut) {
+            coords_sf <- sf::st_as_sf(coords_proj)
+            sf::st_geometry(coords_sf) <- sf::st_as_sfc(
+              sf::st_as_sf(ras_points[snap_idx$to_id, ])
+            )
+            coords <- terra::vect(coords_sf)
+            coords <- terra::project(coords, y = "EPSG:4326")
           } else {
-            template_rast <- ras_list[[1]][[ras_sub]][[1]]
+            return(NULL)
           }
-          ## convert sub to vect
-          coords <- terra::vect(sub, geom = c("Lon", "Lat"), crs = "EPSG:4326")
-          ## Snap to nearest point if snap is requested
-          if (!is.null(dist_cut)) {
-            ## project to requested projection
-            coords <- terra::project(x = coords, y = wkt_proj)
-            ## convert first layer of temporal subset raster to points
-            ras_points <- terra::as.points(template_rast, values = FALSE, na.rm = TRUE)
-            ras_points <- terra::project(ras_points, y = wkt_proj)
-            snap_idx <- terra::nearest(coords, ras_points)[1, ] # only ever the first point
-            # distance in km
-            snap_dist <- as.vector(terra::distance(coords, snap_idx, unit = "km"))
-            ## if snapping, replace the geometry of the coords
-            if (snap_dist <= dist_cut) {
-              ## cant directly edit a terra::vect, need to convert to sf first?
-              coords <- sf::st_as_sf(coords)
-              sf::st_geometry(coords) <- sf::st_as_sfc(sf::st_as_sf(ras_points[snap_idx$to_id, ]))
-              coords <- terra::vect(coords)
-              coords <- terra::project(coords, y = "EPSG:4326")
-            } else {
-              return(NULL)
-            }
+        }
+        # Neighbours or buffer
+        if (!is.null(buff_width)) {
+          coords_proj <- terra::project(coords, y = wkt_proj)
+          nei <- terra::buffer(coords_proj, width = buff_width * 1000)
+          nei <- terra::project(nei, "EPSG:4326")
+          nr <- FALSE
+        } else if (!is.null(neigh)) {
+          ras_points <- terra::as.points(template_rast, values = FALSE, na.rm = TRUE)
+          ras_proj   <- terra::project(ras_points, y = wkt_proj)
+          coords_proj <- terra::project(coords, y = wkt_proj)
+          nn <- FNN::get.knnx(
+            data  = terra::crds(ras_proj),
+            query = terra::crds(coords_proj),
+            k     = neigh
+          )$nn.index
+          nei <- terra::cellFromXY(template_rast,
+                                   xy = terra::crds(ras_points[nn, ]))
+          nr <- TRUE
+        } else {
+          stop("Either 'buff_width' or 'neigh' must be supplied.")
+        }
+        # Summary function: allow "mean" or a function
+        fun_summ <- match.fun(summ_stat)
+        # Extract env variables
+        ext <- lapply(seq_along(ras_list), function(x) {
+          if (inherits(ras_list[[x]], "PackedSpatRaster")) {
+            r <- terra::unwrap(ras_list[[x]])
+          } else {
+            r <- ras_list[[x]]
           }
-          ## Extract either the neighbours or calculate a buffer
-          if (!is.null(buff_width)) {
-            coords <- terra::project(coords, y = wkt_proj)
-            ## buffer in km
-            nei <- terra::buffer(coords, width = buff_width*1000)
-            ## back to WGS84
-            nei <- terra::project(nei, "EPSG:4326")
-            nr <- FALSE
-            coords <- terra::project(coords, "EPSG:4326")
-          } else if (!is.null(neigh)) {
-            ## find the n nearest neighbours
-            ## use this instead of terra::adjacent as raster method includes NA cells.
-            ras_points <- terra::as.points(template_rast,
-                                           values = FALSE, na.rm = TRUE)
-            ## do the matching in projected coordinates
-            nei <- c(FNN::get.knnx(
-              data = terra::crds(terra::project(ras_points, y = wkt_proj)),
-              query = terra::crds(terra::project(coords, y = wkt_proj)),
-              k = neigh)$nn.index)
-            nei <- terra::cellFromXY(template_rast,
-                                     xy = terra::crds(ras_points[nei, ]))
-            nr <- TRUE
-          }
-          # Extract the env variables and summarise according to summstat
-          ext <- lapply(seq_along(ras_list), function(x, ...) {
-            if (inherits(ras_list[[x]], "PackedSpatRaster")) {
-              r <- terra::unwrap(ras_list[[x]])
-            } else {
-              r <- ras_list[[x]]
-            }
-            ex <- tryCatch(
+          ex <- tryCatch({
               if (!nr) {
-                # extract the mean value in the buffer
                 t(terra::extract(r[[ras_sub]], y = nei, fun = "mean",
-                               weights = TRUE, na.rm = TRUE, raw = FALSE,
-                               ID = FALSE))
-              } else if (nr) {
-                # if only 1 layer, extract cells directly
-                if (length(ras_sub) == 1L) {
-                  apply(as.matrix(r[[ras_sub]][nei]), 2, summ_stat, na.rm = TRUE)
-                } else {
-                  # extract values from all neighbours, then calc mean at each time point
-                  apply(terra::extract(r[[ras_sub]], nei), 2, summ_stat, na.rm = TRUE)
-                }
+                                 weights = TRUE, na.rm = TRUE, raw = FALSE,
+                                 ID = FALSE))
               } else {
-                stop()
-              },
-              error = function(e) e)
-            if (inherits(ex, "error")) {
-              ex <- data.table::data.table("ID" = sub$ID,
-                               "Year" = as.vector(ras_time[ras_sub]),
-                               "DT2" = rep(NA, length(ras_sub))
-              )
-              colnames(ex)[3] <- names(ras_list)[x]
-              return(ex)
-            } else {
-              ex <- data.table::data.table("ID" = sub$ID,
-                                           "Year" = as.vector(ras_time[ras_sub]),
-                                           "DT2" = as.vector(ex))
-              colnames(ex)[3] <- names(ras_list)[x]
-              return(ex)
-            }
-          })
-          # Extract modal value from mask
-          m_ext <- tryCatch(
+                if (length(ras_sub) == 1L) {
+                  apply(as.matrix(r[[ras_sub]][nei]), 2, fun_summ, na.rm = TRUE)
+                } else {
+                  apply(terra::extract(r[[ras_sub]], nei), 2, fun_summ, na.rm = TRUE)
+                }
+              }
+            },
+            error = function(e) e
+          )
+          if (inherits(ex, "error")) {
+            ex <- data.table::data.table(
+              ID   = sub$ID,
+              Year = as.vector(ras_time[ras_sub]),
+              DT2  = rep(NA_real_, length(ras_sub)))
+          } else {
+            ex <- data.table::data.table(
+              ID   = sub$ID,
+              Year = as.vector(ras_time[ras_sub]),
+              DT2  = as.vector(ex))
+          }
+          colnames(ex)[3] <- names(ras_list)[x]
+          ex
+        })
+        # Mask extraction
+        m_ext <- tryCatch({
             if (!nr) {
-              # extract the modal value in the buffer
-              t(terra::extract(mask_layer[[ras_sub]], y = nei, fun = terra::modal,
+              t(terra::extract(ml[[ras_sub]], y = nei, fun = terra::modal,
                                weights = FALSE, na.rm = TRUE, raw = FALSE,
                                ID = FALSE))
-            } else if (nr) {
-              # extract values from all neighbours, then calc modal value at each time point
-              apply(terra::extract(mask_layer[[ras_sub]], nei), 2, terra::modal, na.rm = TRUE)
             } else {
-              stop()
-            },
-            error = function(e) e)
-          if (inherits(m_ext, "error")) {
-            m_ext <- data.table::data.table("ID" = sub$ID,
-                                "Year" = as.vector(ras_time[ras_sub]),
-                                "DT2" = rep(NA, length(ras_sub))
-            )
-            colnames(m_ext)[3] <- "LandSea"
-          } else {
-            m_ext <- data.table("ID" = sub$ID,
-                                "Year" = as.vector(ras_time[ras_sub]),
-                                "DT2" = as.vector(m_ext))
-            colnames(m_ext)[3] <- "LandSea"
-          }
-          ext[[length(ext) + 1]] <- m_ext
-          mergedDT <- Reduce(
-            function(x, y)
-              data.table::merge.data.table(x = x, y = y, by = c("ID", "Year"),
-                    all.x = TRUE, all.y = TRUE),
-            ext)
-          ## add in the snapped coordinates
-          mergedDT[, Lon := terra::crds(coords)[, 1]][, Lat := terra::crds(coords)[, 2]]
-          ## re-order columns
-          neworder <- c("ID", "Lon", "Lat", "Year", names(ras_list), "LandSea")
-          data.table::setcolorder(mergedDT, neworder)
-          return(mergedDT)
-        },
-        error = function(e) NULL
-      )
-    },
-    future.seed = TRUE,
-    future.globals = TRUE,
-    future.packages = c("terra", "data.table", "sf", "FNN", "exactextractr")
-  )
+              apply(terra::extract(ml[[ras_sub]], nei), 2, terra::modal, na.rm = TRUE)
+            }
+          },
+          error = function(e) e
+        )
+        if (inherits(m_ext, "error")) {
+          m_ext <- data.table::data.table(
+            ID   = sub$ID,
+            Year = as.vector(ras_time[ras_sub]),
+            DT2  = rep(NA_real_, length(ras_sub)))
+        } else {
+          m_ext <- data.table::data.table(
+            ID   = sub$ID,
+            Year = as.vector(ras_time[ras_sub]),
+            DT2  = as.vector(m_ext))
+        }
+        colnames(m_ext)[3] <- "LandSea"
+        ext[[length(ext) + 1L]] <- m_ext
+        mergedDT <- Reduce(
+          function(x, y)
+            data.table::merge.data.table(x, y, by = c("ID", "Year"),
+                                         all.x = TRUE, all.y = TRUE),
+          ext)
+        mergedDT[, Lon := terra::crds(coords)[, 1]]
+        mergedDT[, Lat := terra::crds(coords)[, 2]]
+        neworder <- c("ID", "Lon", "Lat", "Year", names(ras_list), "LandSea")
+        data.table::setcolorder(mergedDT, neworder)
+        return(mergedDT)
+      },
+      error = function(e) NULL
+    )
+  }
+  idx <- seq_len(nrow(data))
+  if (n_cores <= 1L) {
+    res_list <- pbapply::pblapply(idx, worker_fun)
+  } else {
+    old_plan <- future::plan()
+    on.exit(future::plan(old_plan), add = TRUE)
+    future::plan(future::multisession, workers = n_cores)
+    res_list <- future.apply::future_lapply(
+      idx,
+      FUN = function(i) worker_fun(i),
+      future.seed = TRUE,
+      future.packages = c("terra", "data.table", "sf", "FNN", "exactextractr")
+    )
+  }
   res_list <- Filter(Negate(is.null), res_list)
   if (length(res_list) == 0L) {
     return(data.table::data.table())
   }
-  out <- data.table::rbindlist(res_list, use.names = TRUE, fill = TRUE)
-  return(out)
+  return(data.table::rbindlist(res_list, use.names = TRUE, fill = TRUE))
 }
 
 #' @param ras_time ras_time
