@@ -285,7 +285,9 @@ pair_obs <- function(data, ras_list, mask_layer, ras_time, buff_width = NULL,
 parallel_env_match <- function(data, ras_list, mask_layer, ras_time, window,
                                neigh, buff_width, dist_cut, summ_stat, wkt_proj,
                                n_cores = 1L,...) {
-  worker_fun <- function(i) {
+  worker_fun <- function(i,
+                         data, ras_list, mask_layer, ras_time, window,
+                         neigh, buff_width, dist_cut, summ_stat, wkt_proj) {
     tryCatch(
       {
         sub <- data.table::copy(data)[i, ]
@@ -424,14 +426,38 @@ parallel_env_match <- function(data, ras_list, mask_layer, ras_time, window,
   }
   idx <- seq_len(nrow(data))
   if (n_cores <= 1L) {
-    res_list <- pbapply::pblapply(idx, worker_fun)
+    res_list <- pbapply::pblapply(idx, worker_fun,
+                                  data = data,
+                                  ras_list = ras_list,
+                                  mask_layer = mask_layer,
+                                  ras_time = ras_time,
+                                  window = window,
+                                  neigh = neigh,
+                                  buff_width = buff_width,
+                                  dist_cut = dist_cut,
+                                  summ_stat = summ_stat,
+                                  wkt_proj = wkt_proj)
   } else {
     old_plan <- future::plan()
-    on.exit(future::plan(old_plan), add = TRUE)
+    old_opts <- options(future.globals.maxSize = Inf)
+    on.exit({
+      future::plan(old_plan)
+      options(old_opts)
+      }, add = TRUE)
     future::plan(future::multisession, workers = n_cores)
     res_list <- future.apply::future_lapply(
       idx,
-      FUN = function(i) worker_fun(i),
+      worker_fun,
+      data = data,
+      ras_list = ras_list,
+      mask_layer = mask_layer,
+      ras_time = ras_time,
+      window = window,
+      neigh = neigh,
+      buff_width = buff_width,
+      dist_cut = dist_cut,
+      summ_stat = summ_stat,
+      wkt_proj = wkt_proj,
       future.seed = TRUE,
       future.packages = c("terra", "data.table", "sf", "FNN", "exactextractr")
     )
