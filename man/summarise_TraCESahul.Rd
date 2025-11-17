@@ -7,40 +7,58 @@
 summarise_TraCESahul(x, type = "annual", sumfun = "mean", window = NULL, ...)
 }
 \arguments{
-\item{x}{A SpatRaster imported using \code{\link{import_TraCESahul}} with a \code{TraCESahul} attribute.}
+\item{x}{A SpatRaster created by \code{\link{import_TraCESahul}} containing a
+\code{TraCESahul} attribute.}
 
-\item{type}{Character; one of \code{"annual"}, \code{"monthly"}, or \code{"seasonal"} specifying the summary type.}
+\item{type}{Character; one of \code{"annual"}, \code{"monthly"}, or
+\code{"seasonal"}, specifying the temporal summary to compute.}
 
-\item{sumfun}{A function or character string indicating the summarising function to use. Can be any
-function supported by \code{\link[terra:tapp]{terra::tapp}} or a custom function.}
+\item{sumfun}{A character string or function giving the aggregation method.
+May be any function supported by \code{\link[terra:tapp]{terra::tapp}} or a
+user-defined function.}
 
-\item{window}{Numeric; optional number of years to group together for monthly or seasonal summaries.
-Must be greater than or equal to 10. Windows are right-aligned and incomplete windows are excluded.}
+\item{window}{Numeric; optional number of years to group together when
+producing monthly or seasonal summaries. Must be greater than or equal to
+10. Windows are right-aligned and incomplete trailing windows are excluded.
+When \code{window = 10}, pre-1500 data are treated as already representing a
+decadal climatology and handled accordingly.}
 
 \item{...}{Additional arguments passed to \code{\link[terra:tapp]{terra::tapp}}.}
 }
 \value{
-A SpatRaster summarised according to the specified type and window. Monthly outputs will have
-12 layers per timezone (pre- or post-1500), and seasonal outputs will have four layers per timezone when
-\code{window = NULL}.
+A SpatRaster summarised according to the chosen \code{type} and
+  \code{window}. Monthly outputs contain one layer per month for each
+  timezone (pre- and post-1500). Seasonal outputs contain one layer per
+  austral season for each timezone when \code{window = NULL}. Windowed
+  outputs contain one layer per window–season or window–month combination.
 }
 \description{
-Aggregate an imported \emph{TraCESahul} SpatRaster to annual, monthly, or seasonal summaries.
-Monthly and seasonal summaries can either be taken across the full record or grouped into user-defined
-windows of years. Windows are right-aligned, and any incomplete trailing windows are excluded.
-Seasonal summaries use austral seasons, with DJF December handled as part of the following year.
-Data from before and after 1500 CE are always processed separately and never mixed.
+Summarise an imported \emph{TraCESahul} SpatRaster to annual, monthly, or
+seasonal climatologies. Monthly and seasonal summaries can be taken across the
+full record or grouped into right-aligned windows of years. Windows are
+guaranteed not to mix data from before and after 1500 CE.
+
+Seasonal summaries follow austral seasons. December is treated as belonging to
+the following year/timestep to ensure correct DJF alignment, including when
+time steps are spaced irregularly or when windowed summaries are requested.
 }
 \details{
-Right-aligned windows ensure that the last window ends on the maximum year in the data,
-without including incomplete periods. For DJF December is considered part of the following year,
-ensuring correct austral season alignment.
+Windows are constructed using right-aligned year ranges so the final window
+ends on the latest year in the data. Pre- and post-1500 periods are always
+windowed separately. For seasonal summaries, December is shifted into the
+following year before window assignment to preserve correct DJF grouping.
+When \code{window = 10}, pre-1500 data are already decadal climatologies and
+are treated accordingly when deriving annual, monthly, or seasonal outputs.
 }
 \examples{
 \dontrun{
-pr_summary <- summarise_TraCEShaul(
-x = pr_chunks[[1:120]], # first 120 layers only
-type = "seasonal",
-sumfun = "mean")
+# summarise the data across 30 year intervals
+pr_monthly_win <- summarise_TraCESahul(x = sahul_pr, type = "monthly",
+                                       sumfun = "mean", window = 30)
+tasmax_monthly_win <- summarise_TraCESahul(x = sahul_tasmax, type = "monthly",
+                                           sumfun = "mean", window = 30)
+tasmin_monthly_win <- summarise_TraCESahul(sahul_tasmin, type = "monthly",
+                                           sumfun = "mean", window = 30)
 }
+
 }

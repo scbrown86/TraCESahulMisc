@@ -21,6 +21,7 @@ Depends:
 RoxygenNote: 7.3.3
 Imports: 
     data.table,
+    fastbioclim,
     ncdfCF (>= 0.7.0.9000),
     pbapply,
     terra (>= 1.8-50),

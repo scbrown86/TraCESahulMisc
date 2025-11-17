@@ -1,12 +1,6 @@
-library(TraCESahulMisc)
-library(terra)
 
-fn <- c("D:/TraCE-Sahul/pr/TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_06.nc",
-        "D:/TraCE-Sahul/pr/TraCE_22ka_downscaled_pr_1500_1990_biascorr.nc")
 
-# import the data
-sahul_pr <- import_TraCESahul(fn)
-sahul_pr
+
 
 # summarise the data to annual and seasonal timesteps
 pr_ann <- summarise_TraCESahul(x = sahul_pr, type = "annual",
@@ -31,3 +25,7 @@ pr_season_win
 pr_monthly_win <- summarise_TraCESahul(x = sahul_pr, type = "monthly",
                                        sumfun = "mean", window = 30)
 pr_monthly_win
+
+pr_monthly_10 <- summarise_TraCESahul(x = sahul_pr, type = "monthly",
+                                       sumfun = "mean", window = 10)
+pr_monthly_10
