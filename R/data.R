@@ -6,8 +6,9 @@
 #'
 #' @format A \code{\link[terra:vect]{SpatVect}} with columns:
 #' \describe{
-#'   \item{date_estimate}{Age estimate of fossil record}
-#'   \item{ci_lower, ci_upper}{Lower and upper CI of fossil age}
+#'   \item{date_estimate}{ Age estimate of fossil record}
+#'   \item{ci_lower, ci_upper}{ Lower and upper CI of fossil age}
+#'   \item{occ}{ Binary identifier of whether an occurence orf background point}
 #' }
 #' @source data-raw/ex_foss.R
 #' @usage data(ex_foss)

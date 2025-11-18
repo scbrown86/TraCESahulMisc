@@ -7,7 +7,7 @@ library(virtualspecies)
 dmon <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 
 ex_data <- lapply(c("pr", "tasmax", "tasmin"), function(i) {
-  r <- rast(list.files(path = "C:/Users/Stu/Downloads/TraCESahul/TraCE-Sahul/",
+  r <- rast(list.files(path = "D:/TraCE-Sahul/",
                        recursive = TRUE,
                        pattern = sprintf("TraCE_22ka_downscaled_%s_1500_1990_biascorr.nc", i),
                        full.names = TRUE),
@@ -16,8 +16,8 @@ ex_data <- lapply(c("pr", "tasmax", "tasmin"), function(i) {
   r <- tapp(r, "month", mean, na.rm = TRUE)
   names(r) <- paste0(month.abb,"_", i)
   r})
-ex_data[[1]] <- ex_data[[1]]*(86400*dmon) #kg m-2 s-1 --> mm/day
-
+ex_data[[1]] <- ex_data[[1]]*(86400*dmon) #kg m-2 s-1 --> mm/month
+ex_data
 # check of rainfall
 # panel(ex_data[[1]], range = c(0, 150),
 #       col = hcl.colors(100, "Roma"),
@@ -31,8 +31,11 @@ ex_data <- rast(ex_data)
                                    rescale = TRUE,
                                    plot = TRUE,
                                    realistic.sp = TRUE,
-                                   convert.to.PA = FALSE)}
+                                   convert.to.PA = TRUE)}
 # realistic.sp
+
+# Sampling of 'presence only' occurrences
+
 
 {set.seed(8945); sp.locs <- terra::spatSample(x = realistic.sp$suitab.raster,
                                               size = 75, method = "weights",
@@ -40,8 +43,14 @@ ex_data <- rast(ex_data)
                                               as.raster = FALSE, as.df = FALSE,
                                               as.points = TRUE,
                                               values = TRUE, xy = TRUE,
-                                              cells = FALSE)}
-# sp.locs
+                                              cells = FALSE)
+  bg.points <- terra::spatSample(x = realistic.sp$suitab.raster,
+                                 size = 1500,
+                                 method = "random",
+                                 replace = TRUE,
+                                 na.rm = TRUE, values = TRUE, xy = TRUE)
+  }
+sp.locs
 # p.dens <- density(sp.locs$lyr.1, bw = "SJ",
 #                   kernel = "biweight",
 #                   from = 0, to = 1)
@@ -75,12 +84,20 @@ generate_random_dates <- function(n) {
 }
 
 {set.seed(123)
-  sp.sample.years <- generate_random_dates(nrow(sp.locs))}
+  sp.sample.years <- generate_random_dates(nrow(sp.locs))
+  bg.points.years <- generate_random_dates(nrow(bg.points))
+  }
 sp.sample.years <- sp.sample.years[order(sp.sample.years$date_estimate), ]
+bg.points.years <- bg.points.years[order(bg.points.years $date_estimate), ]
 # sp.sample.years
 
-ex_foss <- cbind(sp.locs, sp.sample.years[, -1])
-ex_foss$lyr.1 <- NULL
+ex_foss <- rbind(cbind(sp.locs[, -1], sp.sample.years[, -1]),
+                 vect(cbind(bg.points, bg.points.years[, -1]),
+                      geom = c("x", "y"),
+                      crs = "EPSG:4326")[, -1])
+ex_foss$occ = c(rep(1, nrow(sp.locs)), rep(0, nrow(bg.points)))
+ex_foss
 ex_foss <- terra::wrap(ex_foss)
+
 # ex_foss
 usethis::use_data(ex_foss, version = 3, overwrite = TRUE)

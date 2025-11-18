@@ -57,7 +57,8 @@ Points further than \code{dist_cut} km from the nearest valid raster cell
 are removed from the output.}
 
 \item{cores}{Integer. Number of CPU cores to use for parallel extraction.
-If \code{cores = 1L}, processing is sequential.}
+If \code{cores = 1L}, processing is sequential. CURRENTLY DISABLED. n_cores is
+checked as set back to 1L.}
 
 \item{...}{Additional arguments passed to internal methods.}
 }

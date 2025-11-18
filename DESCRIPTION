@@ -27,6 +27,7 @@ Imports:
     future.apply,
     ncdfCF (>= 0.7.0.9000),
     pbapply,
+    progressr,
     sf,
     terra (>= 1.8-50),
     utils

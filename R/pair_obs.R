@@ -68,7 +68,8 @@
 #' Points further than \code{dist_cut} km from the nearest valid raster cell
 #' are removed from the output.
 #' @param cores Integer. Number of CPU cores to use for parallel extraction.
-#' If \code{cores = 1L}, processing is sequential.
+#' If \code{cores = 1L}, processing is sequential. CURRENTLY DISABLED. n_cores is
+#' checked as set back to 1L.
 #' @param ... Additional arguments passed to internal methods.
 #'
 #' @return
@@ -278,6 +279,7 @@ pair_obs <- function(data, ras_list, mask_layer, ras_time, buff_width = NULL,
 #' @importFrom data.table copy data.table merge.data.table setcolorder rbindlist
 #' @importFrom sf st_as_sf st_as_sfc st_geometry
 #' @importFrom FNN get.knnx
+#' @importFrom progressr progressor handlers with_progress
 #'
 #' @noRd
 #'
@@ -425,6 +427,10 @@ parallel_env_match <- function(data, ras_list, mask_layer, ras_time, window,
     )
   }
   idx <- seq_len(nrow(data))
+  if (n_cores != 1L) {
+    message("Parallel extraction is currently disabled. Setting n_cores = 1L")
+    n_cores <- 1L
+  }
   if (n_cores <= 1L) {
     res_list <- pbapply::pblapply(idx, worker_fun,
                                   data = data,
@@ -438,29 +444,39 @@ parallel_env_match <- function(data, ras_list, mask_layer, ras_time, window,
                                   summ_stat = summ_stat,
                                   wkt_proj = wkt_proj)
   } else {
+    old_handlers <- progressr::handlers()
+    progressr::handlers("progress")
+    ## Save/restore future plan + options
     old_plan <- future::plan()
     old_opts <- options(future.globals.maxSize = Inf)
     on.exit({
       future::plan(old_plan)
       options(old_opts)
-      }, add = TRUE)
+      progressr::handlers(old_handlers)
+    }, add = TRUE)
     future::plan(future::multisession, workers = n_cores)
-    res_list <- future.apply::future_lapply(
-      idx,
-      worker_fun,
-      data = data,
-      ras_list = ras_list,
-      mask_layer = mask_layer,
-      ras_time = ras_time,
-      window = window,
-      neigh = neigh,
-      buff_width = buff_width,
-      dist_cut = dist_cut,
-      summ_stat = summ_stat,
-      wkt_proj = wkt_proj,
-      future.seed = TRUE,
-      future.packages = c("terra", "data.table", "sf", "FNN", "exactextractr")
-    )
+    res_list <- progressr::with_progress({
+      p <- progressr::progressor(along = idx) # initilise progress
+      future.apply::future_lapply(
+        idx,
+        FUN = function(i, ...) {
+          p()  # tick progress at each worker
+          worker_fun(i, ...)
+        },
+        data = data,
+        ras_list = ras_list,
+        mask_layer = mask_layer,
+        ras_time = ras_time,
+        window = window,
+        neigh = neigh,
+        buff_width = buff_width,
+        dist_cut = dist_cut,
+        summ_stat = summ_stat,
+        wkt_proj = wkt_proj,
+        future.seed = TRUE,
+        future.packages = c("terra", "data.table", "sf", "FNN", "exactextractr")
+      )
+    })
   }
   res_list <- Filter(Negate(is.null), res_list)
   if (length(res_list) == 0L) {
