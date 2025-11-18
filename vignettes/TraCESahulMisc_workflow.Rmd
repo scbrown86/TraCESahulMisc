@@ -1,6 +1,8 @@
 ---
 title: "TraCESahulMisc: Workflow Vignette"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette: default
+  pdf_document: default
 vignette: >
   %\VignetteIndexEntry{TraCESahulMisc: Workflow Vignette}
   %\VignetteEngine{knitr::rmarkdown}
@@ -99,7 +101,7 @@ Data is automatically saved into a output directory that can be specified. If no
 
 Optionally, the data can be collated so that each item in the list that is returned is one variable. The alternative `collate = FALSE` results in each item in the list being all the bioclim variables for a given year.
 
-```{r bioclim}
+```{r bioclim, eval = FALSE, echo=TRUE}
 bioclims <- bioclim_TraCESahul(
   tasmax = tasmax_monthly_win,
   tasmin = tasmin_monthly_win,
@@ -110,27 +112,43 @@ bioclims <- bioclim_TraCESahul(
   collate = TRUE)
 ```
 
+```{r bioClimLoad, echo = FALSE, eval = TRUE}
+# This section will run the bioclim extraction only if the output sds doesnt already exist
+if (!file.exists(file.path(paste0(base_dir,"/bioclims"), "bioclims_TraCESahul.RDS"))) {
+  bioclims <- bioclim_TraCESahul(
+  tasmax = tasmax_monthly_win,
+  tasmin = tasmin_monthly_win,
+  pr = pr_monthly_win,
+  # store in a folder in basedir. Not recommended
+  outdir = paste0(base_dir,"/bioclims"),
+  bioclims = c(1, 4, 5, 6, 7, 12, 13, 14, 17, 18), # default is to use 1:19
+  collate = TRUE)
+} else {
+  bioclims <- terra::unwrap(readRDS(file.path(paste0(base_dir,"/bioclims"), "bioclims_TraCESahul.RDS")))
+}
+```
 A quick plot shows the first item in the list is all the BIO01 (mean annual temperature) results.
 
 ```{r plotBio, echo=FALSE,fig.align='center',fig.dpi=320, fig.height=8, fig.width=9, out.width = "100%"}
 n <- nlyr(bioclims$bio01)
 panel(bioclims$bio01[[round(quantile(1:n, probs = seq(0, 1, length.out = 6)))]],
-      fill_range = TRUE,
+      fill_range = TRUE, range = c(10, 30),
+      col = map.pal("bgyr", n = 100),
       fun = function() lines(conts, lwd = 1, col  ="#000000"),
       box = TRUE,
       background = "grey90",
       nc = 2,
       plg = list(
         legend = "Suitability",
-        title = "Bio01",
+        title = "BIO01 (°C)",
         title.x = 136.75,
         title.y = -10.7,
         title.srt = 90,
         title.cex = 1.1,
-        digits = 2,
+        digits = 0,
         bty = "n",
         size = c(1, 1),
-        at = seq(0, 1, l = 6),
+        at = seq(10, 30, l = 5),
         tick = "through"
       ),
       pax = list(
@@ -287,6 +305,7 @@ spsize <- c("0" = prNum, "1" = prNum)
 
 rf_dws <- randomForest(
   Occ ~ .,
+  mtry = 5,
   data = training,
   ntree = 1000,
   importance = TRUE,
@@ -336,12 +355,14 @@ names(true_suit) <- "true suitability"
 
 # add the true_suit to the preds_stack
 preds_stack <- c(preds_stack, true_suit)
+preds_stack
 ```
 
 Now we can plot the raster stack of predictions and compare it to the _true_ habitat suitability that was used to generate the virtual species occurrences in the `ex_foss` records.
 
 ```{r plotPreds, echo=FALSE, fig.dpi=320, fig.align='center',fig.height=8, fig.width=9,out.width = "100%"}
-panel(preds_stack, range = c(0, 1), fill_range = TRUE,
+panel(preds_stack, 
+      range = c(0, 1), fill_range = TRUE,
       fun = function() lines(conts, lwd = 1, col  ="#000000"),
       box = TRUE,
       background = "grey90",
