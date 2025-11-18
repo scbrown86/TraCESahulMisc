@@ -1,7 +1,5 @@
 To install in R you must first be a collaborator on the project as it is private. When the package is made public it will be much easier!
 
-You can also use GitHub desktop or CLI, create a local copy on your computer and then build the package in RStudio.
-
 ```r
 library(credentials)
 library(remotes)
@@ -21,3 +19,5 @@ credentials::set_github_pat()
 # now remotes::install_github() will work
 remotes::install_github("scbrown86/TraCESahulMisc")
 ```
+
+Alternatively, you can also use GitHub desktop or CLI, create a local copy on your computer and then build the package in RStudio.
