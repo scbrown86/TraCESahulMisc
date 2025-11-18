@@ -3,6 +3,7 @@
 # this code assumes you have downloaded the example TraCE-Sahul data
 library(terra)
 library(virtualspecies)
+library(fastbioclim)
 
 dmon <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 
@@ -17,13 +18,20 @@ ex_data <- lapply(c("pr", "tasmax", "tasmin"), function(i) {
   names(r) <- paste0(month.abb,"_", i)
   r})
 ex_data[[1]] <- ex_data[[1]]*(86400) #kg m-2 s-1 --> mm/day
-ex_data
+ex_data <- fastbioclim::derive_bioclim(
+  bios = 1:19,
+  tmin = ex_data[[3]],
+  tmax = ex_data[[2]],
+  prcp = ex_data[[1]],
+  overwrite = TRUE)
+plot(ex_data)
+
 # check of rainfall
 # panel(ex_data[[1]], range = c(0, 150),
 #       col = hcl.colors(100, "Roma"),
 #       fill_range = TRUE)
 
-ex_data <- rast(ex_data)
+# ex_data <- rast(ex_data)*1
 
 # Generate species
 {set.seed(9621);
@@ -35,8 +43,6 @@ ex_data <- rast(ex_data)
 # realistic.sp
 
 # Sampling of 'presence only' occurrences
-
-
 {set.seed(8945); sp.locs <- terra::spatSample(x = realistic.sp$suitab.raster,
                                               size = 75, method = "weights",
                                               replace = TRUE, na.rm = TRUE,
