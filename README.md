@@ -2,7 +2,7 @@ To install in R you must first be a collaborator on the project as it is private
 
 You can also use GitHub desktop or CLI, create a local copy on your computer and then build the package in RStudio.
 
-```{r}
+```r
 library(credentials)
 library(remotes)
 library(usethis)
