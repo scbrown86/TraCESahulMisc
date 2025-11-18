@@ -82,9 +82,9 @@ matching each record to one or more raster layers based on its calibrated
 age range. Temporal matching uses either exact time slices or right-aligned
 averaging windows (when \code{window} is supplied). Spatial extraction can
 use either a fixed-radius buffer or a nearest-neighbour search. The function
-supports parallel processing via \pkg{\link{future}} and returns a long-format
-\code{\link[data.table:data.table]{data.table}} containing extracted values
-for all environmental rasters and mask layers.
+supports parallel processing via \pkg{\link{pbapply}} and \pkg{\link{future}}
+and returns a long-format \code{\link[data.table:data.table]{data.table}}
+containing extracted values for all environmental rasters and mask layers.
 }
 \details{
 The input \code{data} must contain the columns \code{ID}, \code{Lat},
@@ -149,5 +149,5 @@ foss_matched <- pair_obs(data = ex_foss,
 
 }
 \seealso{
-\code{\link{terra}}, \code{\link{future}}, \code{\link{future.apply}}
+\code{\link{terra}}, \code{\link{future}}, \code{\link{pbapply}}
 }

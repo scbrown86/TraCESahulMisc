@@ -6,9 +6,9 @@
 #' age range. Temporal matching uses either exact time slices or right-aligned
 #' averaging windows (when \code{window} is supplied). Spatial extraction can
 #' use either a fixed-radius buffer or a nearest-neighbour search. The function
-#' supports parallel processing via \pkg{\link{future}} and returns a long-format
-#' \code{\link[data.table:data.table]{data.table}} containing extracted values
-#' for all environmental rasters and mask layers.
+#' supports parallel processing via \pkg{\link{pbapply}} and \pkg{\link{future}}
+#' and returns a long-format \code{\link[data.table:data.table]{data.table}}
+#' containing extracted values for all environmental rasters and mask layers.
 #'
 #' @details
 #' The input \code{data} must contain the columns \code{ID}, \code{Lat},
@@ -117,7 +117,7 @@
 #' }
 #'
 #' @seealso
-#' \code{\link{terra}}, \code{\link{future}}, \code{\link{future.apply}}
+#' \code{\link{terra}}, \code{\link{future}}, \code{\link{pbapply}}
 #'
 #' @export
 #'
@@ -278,12 +278,11 @@ pair_obs <- function(data, ras_list, mask_layer, ras_time, buff_width = NULL,
 }
 
 #' @importFrom future plan multisession
-#' @importFrom future.apply future_lapply
+#' @importFrom pbapply pblapply
 #' @importFrom terra unwrap rast vect crs crds as.points project nearest distance buffer cellFromXY xyFromCell extract
 #' @importFrom data.table copy data.table merge.data.table setcolorder rbindlist
 #' @importFrom sf st_as_sf st_as_sfc st_geometry
 #' @importFrom FNN get.knnx
-#' @importFrom progressr progressor handlers with_progress
 #'
 #' @noRd
 #'
@@ -444,24 +443,16 @@ parallel_env_match <- function(data, ras_list, mask_layer, ras_time, window,
                                   summ_stat = summ_stat,
                                   wkt_proj = wkt_proj)
   } else {
-    old_handlers <- progressr::handlers()
-    progressr::handlers("progress")
     ## Save/restore future plan + options
     old_plan <- future::plan()
     old_opts <- options(future.globals.maxSize = Inf)
     on.exit({
       future::plan(old_plan)
       options(old_opts)
-      progressr::handlers(old_handlers)
     }, add = TRUE)
     future::plan(future::multisession, workers = n_cores)
-    res_list <- progressr::with_progress({
-      p <- progressr::progressor(along = idx) # initilise progress
-      future.apply::future_lapply(
-        idx,
-        FUN = function(i, ...) {
-          p()  # tick progress at each worker
-          worker_fun(i, ...)
+    res_list <- pbapply::pblapply(idx, FUN = function(i,...) {
+          worker_fun(i,...)
         },
         data = data,
         ras_list = ras_list,
@@ -475,8 +466,7 @@ parallel_env_match <- function(data, ras_list, mask_layer, ras_time, window,
         wkt_proj = wkt_proj,
         future.seed = TRUE,
         future.packages = c("terra", "data.table", "sf", "FNN", "exactextractr")
-      )
-    })
+      , cl = "future")
   }
   res_list <- Filter(Negate(is.null), res_list)
   if (length(res_list) == 0L) {

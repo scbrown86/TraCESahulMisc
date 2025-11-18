@@ -21,3 +21,21 @@
 #' ex_foss
 #' }
 "ex_foss"
+
+#' Example habitat suitability
+#'
+#' A \emph{PackedSpatRaster} object with "true" contemporary habitat suitability
+#' for a virtual species. Use \code{\link[terra]{wrap}} to convert back to a
+#' \code{\link[terra:rast]{SpatRast}}.
+#'
+#' @source data-raw/ex_foss.R
+#' @usage data(true_suit)
+#' @format A \code{\link[terra:rast]{PackedSpatRaster}}
+#' @examples
+#' \dontrun{
+#' library(terra)
+#' true_suit
+#' true_suit <- terra::unwrap(true_suit)
+#' true_suit
+#' }
+"true_suit"
