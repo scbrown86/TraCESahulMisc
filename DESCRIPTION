@@ -25,14 +25,11 @@ Imports:
     FNN,
     future,
     future.apply,
-    ncdfCF (>= 0.7.0.9000),
     pbapply,
-    progressr,
     sf,
     terra (>= 1.8-50),
     utils
 Suggests: 
-    CFtime (>= 1.7.1.9000),
     knitr,
     rmarkdown
 VignetteBuilder: knitr

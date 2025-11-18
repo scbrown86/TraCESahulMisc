@@ -70,7 +70,6 @@ classify_TraCESahul <- function(files) {
 #'
 #' filepaths must be given in order (e.g. 01.nc, 02.nc, 03.nc, 04.nc, 05.nc, 06.nc, 1500_1990_biascorr.nc)
 #'
-#' @import ncdfCF
 #' @import data.table
 #' @importFrom terra rast time depth depthName depthUnit
 #' @importFrom pbapply pblapply
