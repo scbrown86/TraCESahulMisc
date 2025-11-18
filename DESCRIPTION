@@ -32,4 +32,7 @@ Imports:
     terra (>= 1.8-50),
     utils
 Suggests: 
-    CFtime (>= 1.7.1.9000)
+    CFtime (>= 1.7.1.9000),
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
