@@ -210,6 +210,10 @@ pair_obs <- function(data, ras_list, mask_layer, ras_time, buff_width = NULL,
   # make sure the mask has time info
   terra::time(mask_layer) <- ras_time
   # extract
+  if (cores != 1L) {
+    message("Parallel extraction is currently disabled. Setting n_cores = 1L")
+    cores <- 1L
+  }
   if (cores > 1L) {
     message(sprintf("Extracting data from rasters in parallel using %s cores and future.apply", cores))
     message("All rasters must be wrapped before parallel extraction. Wrapping now.")
@@ -427,10 +431,6 @@ parallel_env_match <- function(data, ras_list, mask_layer, ras_time, window,
     )
   }
   idx <- seq_len(nrow(data))
-  if (n_cores != 1L) {
-    message("Parallel extraction is currently disabled. Setting n_cores = 1L")
-    n_cores <- 1L
-  }
   if (n_cores <= 1L) {
     res_list <- pbapply::pblapply(idx, worker_fun,
                                   data = data,
