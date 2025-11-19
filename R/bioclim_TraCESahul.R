@@ -164,6 +164,8 @@ bioclim_TraCESahul <- function(tasmax, tasmin, pr,
     extract_bio(b, bio_list, uyears)
   })
   names(bio_collate) <- sprintf("bio%02d", bioclims)
+  bio_collate <- terra::sds(bio_collate)
+  names(bio_collate) <- sprintf("bio%02d", bioclims)
   terra::saveRDS(bio_collate, file = file.path(outdir, "bioclims_TraCESahul.RDS"))
   return(bio_collate)
 }
