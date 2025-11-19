@@ -1,0 +1,645 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+]{article}
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={TraCESahulMisc: Workflow Vignette},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{TraCESahulMisc: Workflow Vignette}
+\author{}
+\date{\vspace{-2.5em}}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}\label{introduction}
+
+This vignette provides a worked example using \texttt{TraCESahulMisc} to
+load downscaled TraCE--Sahul climate data, summarise it in time,
+calculate BIOCLIM variables, match palaeo-observations, generate
+background points, and fit a quick Random Forest model to examine
+habitat suitability through time.
+
+\section{Installing and loading
+packages}\label{installing-and-loading-packages}
+
+For the vignette we need three packages.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{library}\NormalTok{(TraCESahulMisc)}
+\FunctionTok{library}\NormalTok{(terra)}
+\CommentTok{\#\textgreater{} terra 1.8.80}
+\FunctionTok{library}\NormalTok{(randomForest)}
+\CommentTok{\#\textgreater{} randomForest 4.7{-}1.2}
+\CommentTok{\#\textgreater{} Type rfNews() to see new features/changes/bug fixes.}
+
+\CommentTok{\# only for plotting}
+\FunctionTok{library}\NormalTok{(rnaturalearth)}
+\NormalTok{conts }\OtherTok{\textless{}{-}} \FunctionTok{vect}\NormalTok{(rnaturalearth}\SpecialCharTok{::}\FunctionTok{ne\_coastline}\NormalTok{(}\AttributeTok{scale =} \DecValTok{50}\NormalTok{))}
+\NormalTok{conts }\OtherTok{\textless{}{-}} \FunctionTok{crop}\NormalTok{(conts, }\FunctionTok{ext}\NormalTok{(}\DecValTok{125}\NormalTok{, }\DecValTok{135}\NormalTok{, }\SpecialCharTok{{-}}\DecValTok{13}\NormalTok{, }\SpecialCharTok{{-}}\DecValTok{8}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\section{Downloading example data}\label{downloading-example-data}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{base\_dir }\OtherTok{\textless{}{-}} \StringTok{"D:/TraCE{-}Sahul"}
+\CommentTok{\# download\_trace\_data(base\_dir) \# Run once only}
+\end{Highlighting}
+\end{Shaded}
+
+\section{Importing TraCE--Sahul data}\label{importing-tracesahul-data}
+
+This small function will read in the downloaded data to an object called
+\texttt{sahul} which will then have names for each of the variables.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{vars }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\StringTok{"pr"}\NormalTok{, }\StringTok{"tasmax"}\NormalTok{, }\StringTok{"tasmin"}\NormalTok{)}
+
+\NormalTok{load\_tracesahul }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(base, var) \{}
+\NormalTok{  f1 }\OtherTok{\textless{}{-}} \FunctionTok{file.path}\NormalTok{(base, var,}
+                  \FunctionTok{sprintf}\NormalTok{(}\StringTok{"TraCE\_22ka\_downscaled\_\%s\_decadal\_21k\_1500CE\_biascorr.nc"}\NormalTok{, var))}
+\NormalTok{  f2 }\OtherTok{\textless{}{-}} \FunctionTok{file.path}\NormalTok{(base, var,}
+                  \FunctionTok{sprintf}\NormalTok{(}\StringTok{"TraCE\_22ka\_downscaled\_\%s\_1500\_1990\_biascorr.nc"}\NormalTok{, var))}
+  \FunctionTok{import\_TraCESahul}\NormalTok{(}\FunctionTok{c}\NormalTok{(f1, f2))}
+\NormalTok{\}}
+\NormalTok{sahul }\OtherTok{\textless{}{-}} \FunctionTok{lapply}\NormalTok{(vars, }\ControlFlowTok{function}\NormalTok{(v) }\FunctionTok{load\_tracesahul}\NormalTok{(base\_dir, v))}
+\FunctionTok{names}\NormalTok{(sahul) }\OtherTok{\textless{}{-}}\NormalTok{ vars}
+\NormalTok{sahul}
+\CommentTok{\#\textgreater{} $pr}
+\CommentTok{\#\textgreater{} class       : SpatRaster }
+\CommentTok{\#\textgreater{} size        : 100, 200, 31740  (nrow, ncol, nlyr)}
+\CommentTok{\#\textgreater{} resolution  : 0.05, 0.05  (x, y)}
+\CommentTok{\#\textgreater{} extent      : 125, 135, {-}13, {-}8  (xmin, xmax, ymin, ymax)}
+\CommentTok{\#\textgreater{} coord. ref. : lon/lat WGS 84 (CRS84) (OGC:CRS84) }
+\CommentTok{\#\textgreater{} sources     : TraCE\_22ka\_downscaled\_pr\_decadal\_21k\_1500CE\_biascorr.nc  (25860 layers) }
+\CommentTok{\#\textgreater{}               TraCE\_22ka\_downscaled\_pr\_1500\_1990\_biascorr.nc  (5880 layers) }
+\CommentTok{\#\textgreater{} varnames    : pr (precipitation) }
+\CommentTok{\#\textgreater{}               pr (precipitation) }
+\CommentTok{\#\textgreater{} names       :       pr\_1,       pr\_2,       pr\_3,       pr\_4,       pr\_5,       pr\_6,        ... }
+\CommentTok{\#\textgreater{} unit        : kg m{-}2 s{-}1 }
+\CommentTok{\#\textgreater{} depth       : 1 to 12 (calendar month [calendar month]: 12 steps) }
+\CommentTok{\#\textgreater{} time (raw)  : {-}20045 to 1989 (2645 steps) }
+\CommentTok{\#\textgreater{} }
+\CommentTok{\#\textgreater{} $tasmax}
+\CommentTok{\#\textgreater{} class       : SpatRaster }
+\CommentTok{\#\textgreater{} size        : 100, 200, 31740  (nrow, ncol, nlyr)}
+\CommentTok{\#\textgreater{} resolution  : 0.05, 0.05  (x, y)}
+\CommentTok{\#\textgreater{} extent      : 125, 135, {-}13, {-}8  (xmin, xmax, ymin, ymax)}
+\CommentTok{\#\textgreater{} coord. ref. : lon/lat WGS 84 (CRS84) (OGC:CRS84) }
+\CommentTok{\#\textgreater{} sources     : TraCE\_22ka\_downscaled\_tasmax\_decadal\_21k\_1500CE\_biascorr.nc  (25860 layers) }
+\CommentTok{\#\textgreater{}               TraCE\_22ka\_downscaled\_tasmax\_1500\_1990\_biascorr.nc  (5880 layers) }
+\CommentTok{\#\textgreater{} varnames    : tasmax (Daily Maximum Near{-}Surface Air Temperatures) }
+\CommentTok{\#\textgreater{}               tasmax (Daily Maximum Near{-}Surface Air Temperatures) }
+\CommentTok{\#\textgreater{} names       : tasmax\_1, tasmax\_2, tasmax\_3, tasmax\_4, tasmax\_5, tasmax\_6,     ... }
+\CommentTok{\#\textgreater{} unit        : Celcius }
+\CommentTok{\#\textgreater{} depth       : 1 to 12 (calendar month [calendar month]: 12 steps) }
+\CommentTok{\#\textgreater{} time (raw)  : {-}20045 to 1989 (2645 steps) }
+\CommentTok{\#\textgreater{} }
+\CommentTok{\#\textgreater{} $tasmin}
+\CommentTok{\#\textgreater{} class       : SpatRaster }
+\CommentTok{\#\textgreater{} size        : 100, 200, 31740  (nrow, ncol, nlyr)}
+\CommentTok{\#\textgreater{} resolution  : 0.05, 0.05  (x, y)}
+\CommentTok{\#\textgreater{} extent      : 125, 135, {-}13, {-}8  (xmin, xmax, ymin, ymax)}
+\CommentTok{\#\textgreater{} coord. ref. : lon/lat WGS 84 (CRS84) (OGC:CRS84) }
+\CommentTok{\#\textgreater{} sources     : TraCE\_22ka\_downscaled\_tasmin\_decadal\_21k\_1500CE\_biascorr.nc  (25860 layers) }
+\CommentTok{\#\textgreater{}               TraCE\_22ka\_downscaled\_tasmin\_1500\_1990\_biascorr.nc  (5880 layers) }
+\CommentTok{\#\textgreater{} varnames    : tasmin (Daily Minimum Near{-}Surface Air Temperatures) }
+\CommentTok{\#\textgreater{}               tasmin (Daily Minimum Near{-}Surface Air Temperatures) }
+\CommentTok{\#\textgreater{} names       : tasmin\_1, tasmin\_2, tasmin\_3, tasmin\_4, tasmin\_5, tasmin\_6,     ... }
+\CommentTok{\#\textgreater{} unit        : Celcius }
+\CommentTok{\#\textgreater{} depth       : 1 to 12 (calendar month [calendar month]: 12 steps) }
+\CommentTok{\#\textgreater{} time (raw)  : {-}20045 to 1989 (2645 steps)}
+\end{Highlighting}
+\end{Shaded}
+
+\section{Temporal summarisation}\label{temporal-summarisation}
+
+Here we can use the \texttt{summarise\_TraCESahul} to aggregate the data
+in time.
+
+The function is able to summarise an imported TraCESahul SpatRaster to
+annual, monthly, or seasonal climatologies.
+
+Monthly and seasonal summaries can be taken across the full record or
+grouped into right-aligned windows of years. When
+\texttt{window\ =\ 10}, the pre-1500 data are already decadal
+climatologies and so are treated accordingly when deriving annual,
+monthly, or seasonal outputs. The windows are guaranteed not to mix data
+from before and after 1500 CE as there is a switch from decadal monthly
+climatologies to annual monthly data from 1500 CE onwards.
+
+Seasonal summaries follow austral seasons. December is treated as
+belonging to the following year/timestep to ensure correct DJF
+alignment, including when time steps are spaced irregularly or when
+windowed summaries are requested.
+
+Below, the imported data is aggregated to monthly averages using a
+30-year right aligned window.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{pr\_monthly\_win }\OtherTok{\textless{}{-}} \FunctionTok{summarise\_TraCESahul}\NormalTok{(sahul}\SpecialCharTok{$}\NormalTok{pr, }\AttributeTok{type =} \StringTok{"monthly"}\NormalTok{,}
+                                       \AttributeTok{sumfun =} \StringTok{"mean"}\NormalTok{, }\AttributeTok{window =} \DecValTok{30}\NormalTok{)}
+\NormalTok{tasmax\_monthly\_win }\OtherTok{\textless{}{-}} \FunctionTok{summarise\_TraCESahul}\NormalTok{(sahul}\SpecialCharTok{$}\NormalTok{tasmax, }\AttributeTok{type =} \StringTok{"monthly"}\NormalTok{,}
+                                           \AttributeTok{sumfun =} \StringTok{"mean"}\NormalTok{, }\AttributeTok{window =} \DecValTok{30}\NormalTok{)}
+\NormalTok{tasmin\_monthly\_win }\OtherTok{\textless{}{-}} \FunctionTok{summarise\_TraCESahul}\NormalTok{(sahul}\SpecialCharTok{$}\NormalTok{tasmin, }\AttributeTok{type =} \StringTok{"monthly"}\NormalTok{,}
+                                           \AttributeTok{sumfun =} \StringTok{"mean"}\NormalTok{, }\AttributeTok{window =} \DecValTok{30}\NormalTok{)}
+
+\NormalTok{lyr\_names }\OtherTok{\textless{}{-}} \FunctionTok{rep}\NormalTok{(month.abb, }\FunctionTok{nlyr}\NormalTok{(pr\_monthly\_win)}\SpecialCharTok{/}\DecValTok{12}\NormalTok{)}
+\FunctionTok{names}\NormalTok{(pr\_monthly\_win) }\OtherTok{\textless{}{-}} \FunctionTok{paste0}\NormalTok{(lyr\_names, }\StringTok{"\_pr"}\NormalTok{)}
+\FunctionTok{names}\NormalTok{(tasmax\_monthly\_win) }\OtherTok{\textless{}{-}} \FunctionTok{paste0}\NormalTok{(lyr\_names, }\StringTok{"\_tasmax"}\NormalTok{)}
+\FunctionTok{names}\NormalTok{(tasmin\_monthly\_win) }\OtherTok{\textless{}{-}} \FunctionTok{paste0}\NormalTok{(lyr\_names, }\StringTok{"\_tasmin"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\section{BIOCLIM calculation}\label{bioclim-calculation}
+
+The \texttt{bioclim\_TraCESahul} function calculates bioclimatic
+variables (BIO1--BIO19) from monthly TraCESahul climate data using
+\texttt{fastbioclim::derive\_bioclim}.
+
+The function requires monthly maximum temperature, minimum temperature,
+and precipitation rasters, performs optional precipitation scaling,
+processes each year independently, and returns either a list of annual
+bioclim stacks or collated multi-year rasters for each requested
+bioclimatic variable.
+
+Ideally, the data should be the output from
+\texttt{summarise\_TraCESahul} as there are a number of checks performed
+on the data, which are guaranteed to pass if the data has been
+aggregated with \texttt{summarise\_TraCESahul}.
+
+Precipitation data is automatically converted from a flux (i.e.~kg m-2
+s-1) to a rate (mm/day) if the units are set. See the \texttt{pr\_scale}
+and \texttt{new\_units} arguments for further details.
+
+Data is automatically saved into a output directory that can be
+specified. If not specified a \texttt{tempdir()} is created and the user
+is notified of the location of the directory so files can be retrieved.
+
+Optionally, the data can be collated so that each item in the list that
+is returned is one variable. The alternative \texttt{collate\ =\ FALSE}
+results in each item in the list being all the bioclim variables for a
+given year.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{bioclims }\OtherTok{\textless{}{-}} \FunctionTok{bioclim\_TraCESahul}\NormalTok{(}
+  \AttributeTok{tasmax =}\NormalTok{ tasmax\_monthly\_win,}
+  \AttributeTok{tasmin =}\NormalTok{ tasmin\_monthly\_win,}
+  \AttributeTok{pr =}\NormalTok{ pr\_monthly\_win,}
+  \CommentTok{\# store in a folder in basedir. Not recommended}
+  \AttributeTok{outdir =} \FunctionTok{paste0}\NormalTok{(base\_dir,}\StringTok{"/bioclims"}\NormalTok{),}
+  \AttributeTok{bioclims =} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{4}\NormalTok{, }\DecValTok{5}\NormalTok{, }\DecValTok{6}\NormalTok{, }\DecValTok{7}\NormalTok{, }\DecValTok{12}\NormalTok{, }\DecValTok{13}\NormalTok{, }\DecValTok{14}\NormalTok{, }\DecValTok{17}\NormalTok{, }\DecValTok{18}\NormalTok{), }\CommentTok{\# default is to use 1:19}
+  \AttributeTok{collate =} \ConstantTok{TRUE}\NormalTok{)}
+\NormalTok{bioclims}
+\end{Highlighting}
+\end{Shaded}
+
+A quick plot shows the first item in the list is all the BIO01 (mean
+annual temperature) results.
+
+\begin{center}\includegraphics[width=1\linewidth]{TraCESahulMisc_workflow_files/figure-latex/plotBio-1} \end{center}
+
+\section{Generate a mask}\label{generate-a-mask}
+
+Here we generate the mask required by the fossil matching function.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# make a mask using bio01}
+\NormalTok{mask\_ras }\OtherTok{\textless{}{-}}\NormalTok{ bioclims}\SpecialCharTok{$}\NormalTok{bio01}
+\NormalTok{mask\_ras }\OtherTok{\textless{}{-}} \FunctionTok{ifel}\NormalTok{(}\FunctionTok{is.na}\NormalTok{(mask\_ras), }\ConstantTok{NA}\NormalTok{, }\DecValTok{1}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\section{Fossil matching}\label{fossil-matching}
+
+The example fossil dataset \texttt{data(ex\_foss)} contains spatial
+point locations and associated radiocarbon age estimates. The raw object
+is stored as a SpatVector and needs to be converted into a data table
+that can be passed to \texttt{pair\_obs}.
+
+The \texttt{terra::unwrap} call ensures that all attributes are pulled
+into the R session, including the age and confidence interval fields.
+
+To prepare the data, the spatial coordinates are extracted from the
+SpatVector, unique integer IDs are assigned, and the original date
+estimate and its upper and lower confidence bounds are retained. The
+resulting data table contains one row per observation, with explicit
+latitude, longitude, and temporal uncertainty.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{data}\NormalTok{(ex\_foss)}
+\NormalTok{ex\_foss }\OtherTok{\textless{}{-}}\NormalTok{ terra}\SpecialCharTok{::}\FunctionTok{unwrap}\NormalTok{(ex\_foss)}
+
+\NormalTok{ex\_foss }\OtherTok{\textless{}{-}}\NormalTok{ data.table}\SpecialCharTok{::}\FunctionTok{data.table}\NormalTok{(}
+  \AttributeTok{ID =} \DecValTok{1}\SpecialCharTok{:}\FunctionTok{nrow}\NormalTok{(ex\_foss),}
+  \AttributeTok{Lat =} \FunctionTok{crds}\NormalTok{(ex\_foss)[,}\DecValTok{2}\NormalTok{],}
+  \AttributeTok{Lon =} \FunctionTok{crds}\NormalTok{(ex\_foss)[,}\DecValTok{1}\NormalTok{],}
+  \AttributeTok{Age =}\NormalTok{ ex\_foss}\SpecialCharTok{$}\NormalTok{date\_estimate,}
+  \AttributeTok{AgeMin =}\NormalTok{ ex\_foss}\SpecialCharTok{$}\NormalTok{ci\_upper,}
+  \AttributeTok{AgeMax =}\NormalTok{ ex\_foss}\SpecialCharTok{$}\NormalTok{ci\_lower}
+\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+#>       ID     Lat     Lon    Age AgeMin AgeMax
+#>    <int>   <num>   <num>  <num>  <num>  <num>
+#> 1:     1 -11.575 132.725 -20900 -20859 -20941
+#> 2:     2 -12.575 134.275 -20473 -20441 -20505
+#> 3:     3 -12.225 133.875 -18041 -17984 -18097
+#> 4:     4 -12.525 130.675 -17595 -17551 -17639
+#> 5:     5 -12.725 130.475 -17259 -17233 -17285
+#> 6:     6 -12.075 133.375 -16878 -16847 -16908
+\end{verbatim}
+
+The expected input structure for \texttt{pair\_obs} is a
+\texttt{data.table} containing:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Lat and Lon in geographic coordinates (decimal degrees)
+\item
+  Age, the central age estimate
+\item
+  AgeMin and AgeMax, representing the youngest and oldest bounds of the
+  age range
+\item
+  any optional additional columns retained for downstream use
+\end{enumerate}
+
+\texttt{pair\_obs} uses the temporal range (AgeMin--AgeMax) to determine
+which climate layers should be included during matching.
+
+\subsection{\texorpdfstring{Environmental matching with
+\texttt{pair\_obs}}{Environmental matching with pair\_obs}}\label{environmental-matching-with-pair_obs}
+
+\texttt{pair\_obs} extracts climate values from time-indexed raster
+stacks and associates them with each fossil record, accounting for
+temporal uncertainty, spatial neighbourhoods, and optional
+distance-based filtering. The function is designed specifically for
+datasets like TraCE--Sahul, where each raster layer corresponds to a
+single year (or summary period) and a long continuous time series is
+available.
+
+The matching workflow includes the following steps:
+
+\begin{itemize}
+\item
+  Identification of candidate climate layers based on fossil ages and
+  the specified temporal window (window). For example, a 30-year window
+  uses the 30 most recent layers preceding the most-recent age estimate
+  (i.e.~right aligned).
+\item
+  Spatial filtering using a mask (mask\_layer), which ensures that only
+  land pixels or valid climate surfaces are used. Records occurring on
+  land/sea can be filtered post-matching depending on what is required.
+\item
+  Extraction of nearby cell values using the requested neighbourhood
+  size (\texttt{neigh}). Values may be taken from the closest cell, or
+  averaged across all neighbouring cells if a summary statistic is
+  supplied.
+\item
+  Optional distance-based exclusion using \texttt{dist\_cut}, which
+  removes records where the spatial offset between the fossil location
+  and the raster grid exceeds a specified threshold.
+\item
+  Precision control through the prec argument, which rounds output
+  values.
+\item
+  Parallelisation using cores for improved performance on large
+  datasets. All rasters are wrapped and unwrapped internally to ensure
+  compatibility with parallel workers. This is currently disabled.
+\end{itemize}
+
+The function returns a data table containing the original fossil
+metadata, the matched climate values, the temporal layer selected for
+each match, and diagnostic information about mask status, neighbourhood
+selection, and any records that could not be matched (e.g.~ages older
+than the available climate layers).
+
+In the following example, climate values are drawn from BIOCLIM rasters
+(\texttt{ras\_list\ =\ bioclims}). A 30-year right-aligned temporal
+window is used (\texttt{window\ =\ 30}), eight-cell neighbourhoods are
+searched (\texttt{neigh\ =\ 8}), and values are averaged
+(\texttt{summ\_stat\ =\ "mean"}) when multiple neighbouring cells are
+available. Records more than 50 km from the raster grid are excluded
+(\texttt{dist\_cut\ =\ 50}).
+
+The final output contains matched BIOCLIM variables for all fossils
+whose ages fall within the time span of the dataset.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{foss\_matched\_bioclim }\OtherTok{\textless{}{-}} \FunctionTok{pair\_obs}\NormalTok{(}
+  \AttributeTok{data =}\NormalTok{ ex\_foss,}
+  \AttributeTok{ras\_list =}\NormalTok{ bioclims,}
+  \AttributeTok{mask\_layer =}\NormalTok{ mask\_ras,}
+  \AttributeTok{ras\_time =}\NormalTok{ terra}\SpecialCharTok{::}\FunctionTok{time}\NormalTok{(bioclims}\SpecialCharTok{$}\NormalTok{bio01),}
+  \AttributeTok{window =} \DecValTok{30}\NormalTok{, }\CommentTok{\# 30{-}year window}
+  \AttributeTok{neigh =} \DecValTok{8}\NormalTok{, }\CommentTok{\# 8{-}neighbours (rook)}
+  \AttributeTok{prec =} \DecValTok{3}\NormalTok{, }\CommentTok{\# 3 decimal places}
+  \AttributeTok{summ\_stat =} \StringTok{"mean"}\NormalTok{,}
+  \AttributeTok{dist\_cut =} \DecValTok{50}\NormalTok{, }\CommentTok{\# km}
+  \CommentTok{\# parallel is disabled and will be set to 1 if any other value is given}
+  \AttributeTok{cores =} \DecValTok{1}\DataTypeTok{L}\NormalTok{, }
+  \AttributeTok{buff\_width =} \ConstantTok{NULL}
+\NormalTok{)}
+\CommentTok{\#\textgreater{} Lon/Lat points will be snapped to nearest points on rasters. Cutoff distance = 50 km.}
+\CommentTok{\#\textgreater{} Extracting data from rasters sequentially}
+\CommentTok{\#\textgreater{} Warning in pair\_obs(data = ex\_foss, ras\_list = bioclims, mask\_layer = mask\_ras, : }
+\CommentTok{\#\textgreater{} There were 2 samples removed (no temporal match, \textgreater{} cutoff distance, or extraction error).}
+\CommentTok{\#\textgreater{} Warning in pair\_obs(data = ex\_foss, ras\_list = bioclims, mask\_layer = mask\_ras, : Samples removed: 1, 2}
+\end{Highlighting}
+\end{Shaded}
+
+\section{Species distribution
+modelling}\label{species-distribution-modelling}
+
+Following data aggregation and record matching, we can create a simple
+species distribution model to examine how habitat suitability (predicted
+occurence) has changed through time.
+
+Here we use downsampled random forests after extracting some background
+values through time.
+
+The down-sampling approach for random forests ensures that each tree in
+the Random Forest is trained using an equal number of presence and
+background samples. This is controlled through the \texttt{sampsize}
+argument, which accepts a named vector specifying how many observations
+to draw from each class during bootstrap sampling. Although each tree is
+fitted with balanced class sizes, the final forest still incorporates
+the full set of background records because different subsets are
+selected for each tree across the ensemble.
+
+\subsection{Background point
+generation}\label{background-point-generation}
+
+Here we generate 12,600 background points (50 samples x 252 timesteps)
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# which timesteps from the TraCE{-}Sahul data are included in our fossil matched data}
+\NormalTok{tidx }\OtherTok{\textless{}{-}} \FunctionTok{which}\NormalTok{(terra}\SpecialCharTok{::}\FunctionTok{time}\NormalTok{(bioclims}\SpecialCharTok{$}\NormalTok{bio01) }\SpecialCharTok{\%in\%}\NormalTok{ foss\_matched\_bioclim}\SpecialCharTok{$}\NormalTok{Year)}
+
+\CommentTok{\# extract bg points.}
+\DocumentationTok{\#\# seed is set for reproducability}
+\NormalTok{\{}\FunctionTok{set.seed}\NormalTok{(}\DecValTok{84564}\NormalTok{)}
+\NormalTok{bg\_points }\OtherTok{\textless{}{-}} \FunctionTok{lapply}\NormalTok{(tidx, }\ControlFlowTok{function}\NormalTok{(t) \{}
+\NormalTok{  nsamps }\OtherTok{\textless{}{-}} \DecValTok{50}
+\NormalTok{  preds }\OtherTok{\textless{}{-}} \FunctionTok{rast}\NormalTok{(}\FunctionTok{lapply}\NormalTok{(}\FunctionTok{seq\_along}\NormalTok{(bioclims), }\ControlFlowTok{function}\NormalTok{(i,...) bioclims[[i]][[t]]))}
+  \FunctionTok{names}\NormalTok{(preds) }\OtherTok{\textless{}{-}} \FunctionTok{sapply}\NormalTok{(}\FunctionTok{strsplit}\NormalTok{(}\FunctionTok{names}\NormalTok{(preds), }\StringTok{"\_"}\NormalTok{), }\StringTok{"["}\NormalTok{, }\DecValTok{1}\NormalTok{)}
+\NormalTok{  data.table}\SpecialCharTok{::}\FunctionTok{setDT}\NormalTok{(terra}\SpecialCharTok{::}\FunctionTok{spatSample}\NormalTok{(preds, nsamps, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{))}
+\NormalTok{\})\}}
+
+\CommentTok{\# collate the sample and round}
+\NormalTok{bg\_points }\OtherTok{\textless{}{-}}\NormalTok{ data.table}\SpecialCharTok{::}\FunctionTok{rbindlist}\NormalTok{(bg\_points)}
+\NormalTok{cols }\OtherTok{\textless{}{-}} \FunctionTok{names}\NormalTok{(bg\_points)}
+\NormalTok{bg\_points[,(cols) }\SpecialCharTok{:=} \FunctionTok{round}\NormalTok{(.SD, }\DecValTok{3}\NormalTok{), .SDcols }\OtherTok{=}\NormalTok{ cols]}
+\end{Highlighting}
+\end{Shaded}
+
+A quick looks shows what we generated for the first 5 variables
+
+\begin{verbatim}
+#>     bio01   bio04  bio05  bio06  bio07
+#>     <num>   <num>  <num>  <num>  <num>
+#> 1: 24.970  64.277 27.839 22.126  5.713
+#> 2: 25.362  59.277 27.267 23.515  3.753
+#> 3: 25.340  59.161 27.158 23.661  3.496
+#> 4: 25.333  60.906 27.235 23.503  3.733
+#> 5: 25.353 196.556 34.818 16.446 18.372
+#> 6: 25.466  68.488 28.073 22.760  5.313
+\end{verbatim}
+
+\subsection{Random Forest modelling}\label{random-forest-modelling}
+
+Here we generate the training data and build the random forest.
+
+Columns not needed are excluded, and the presence and absence are set as
+factors so we can do classification modelling.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{training }\OtherTok{\textless{}{-}}\NormalTok{ data.table}\SpecialCharTok{::}\FunctionTok{rbindlist}\NormalTok{(}\FunctionTok{list}\NormalTok{(}
+\NormalTok{  data.table}\SpecialCharTok{::}\FunctionTok{copy}\NormalTok{(foss\_matched\_bioclim)[, }\SpecialCharTok{{-}}\FunctionTok{c}\NormalTok{(}\StringTok{"ID"}\NormalTok{, }\StringTok{"Lon"}\NormalTok{, }\StringTok{"Lat"}\NormalTok{, }\StringTok{"Year"}\NormalTok{, }\StringTok{"LandSea"}\NormalTok{)][, }\AttributeTok{Occ :=} \StringTok{"1"}\NormalTok{],}
+\NormalTok{  data.table}\SpecialCharTok{::}\FunctionTok{copy}\NormalTok{(bg\_points)[, }\AttributeTok{Occ :=} \StringTok{"0"}\NormalTok{]}
+\NormalTok{))}
+
+\NormalTok{training[, Occ }\SpecialCharTok{:=} \FunctionTok{factor}\NormalTok{(Occ, }\AttributeTok{levels =} \FunctionTok{c}\NormalTok{(}\StringTok{"0"}\NormalTok{,}\StringTok{"1"}\NormalTok{))]}
+
+\NormalTok{prNum }\OtherTok{\textless{}{-}} \FunctionTok{as.numeric}\NormalTok{(}\FunctionTok{table}\NormalTok{(training}\SpecialCharTok{$}\NormalTok{Occ)[}\StringTok{"1"}\NormalTok{])}
+\NormalTok{spsize }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\StringTok{"0"} \OtherTok{=}\NormalTok{ prNum, }\StringTok{"1"} \OtherTok{=}\NormalTok{ prNum)}
+
+\NormalTok{rf\_dws }\OtherTok{\textless{}{-}} \FunctionTok{randomForest}\NormalTok{(}
+\NormalTok{  Occ }\SpecialCharTok{\textasciitilde{}}\NormalTok{ .,}
+  \AttributeTok{mtry =} \DecValTok{5}\NormalTok{,}
+  \AttributeTok{data =}\NormalTok{ training,}
+  \AttributeTok{ntree =} \DecValTok{1000}\NormalTok{,}
+  \AttributeTok{importance =} \ConstantTok{TRUE}\NormalTok{,}
+  \AttributeTok{sampsize =}\NormalTok{ spsize,}
+  \AttributeTok{replace =} \ConstantTok{TRUE}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+We can see that the random forest model was moderatly accurate using the
+misclassification matrix
+
+\begin{verbatim}
+#> 
+#> Call:
+#>  randomForest(formula = Occ ~ ., data = training, mtry = 5, ntree = 1000,      importance = TRUE, sampsize = spsize, replace = TRUE) 
+#>                Type of random forest: classification
+#>                      Number of trees: 1000
+#> No. of variables tried at each split: 5
+#> 
+#>         OOB estimate of  error rate: 15.8%
+#> Confusion matrix:
+#>       0    1 class.error
+#> 0 10609 1991   0.1580159
+#> 1    48  259   0.1563518
+\end{verbatim}
+
+\subsection{Raster prediction example}\label{raster-prediction-example}
+
+Finally, we can predict from the RF model to generate layers of
+prediction probability (or habitat suitability).
+
+Here we will extract the rasters and predict at a number of timesteps so
+we can see how probability of occurrence changes through time.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# time steps to extract at}
+\NormalTok{ts }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{, }\DecValTok{65}\NormalTok{, }\DecValTok{422}\NormalTok{, }\DecValTok{507}\NormalTok{, }\DecValTok{730}\NormalTok{)}
+
+\CommentTok{\# HS predictions}
+\NormalTok{preds\_stack }\OtherTok{\textless{}{-}} \FunctionTok{rast}\NormalTok{(}\FunctionTok{lapply}\NormalTok{(ts, }\ControlFlowTok{function}\NormalTok{(t) \{}
+\NormalTok{  r }\OtherTok{\textless{}{-}} \FunctionTok{rast}\NormalTok{(}\FunctionTok{lapply}\NormalTok{(}\FunctionTok{seq\_along}\NormalTok{(bioclims), }\ControlFlowTok{function}\NormalTok{(i) \{}
+\NormalTok{    bioclims[[i]][[t]]}
+\NormalTok{  \}))}
+  \CommentTok{\# Give the correct names to the layers in each stack}
+  \FunctionTok{names}\NormalTok{(r) }\OtherTok{\textless{}{-}} \FunctionTok{sapply}\NormalTok{(}\FunctionTok{strsplit}\NormalTok{(}\FunctionTok{names}\NormalTok{(r), }\StringTok{"\_"}\NormalTok{), }\StringTok{"["}\NormalTok{, }\DecValTok{1}\NormalTok{)}
+  \CommentTok{\# predict prob of occurence}
+\NormalTok{  pr }\OtherTok{\textless{}{-}} \FunctionTok{predict}\NormalTok{(r, rf\_dws, }\AttributeTok{type =} \StringTok{"prob"}\NormalTok{, }\AttributeTok{index =} \DecValTok{2}\NormalTok{)}
+  \FunctionTok{names}\NormalTok{(pr) }\OtherTok{\textless{}{-}}\NormalTok{ terra}\SpecialCharTok{::}\FunctionTok{time}\NormalTok{(bioclims}\SpecialCharTok{$}\NormalTok{bio01)[t]}
+  \FunctionTok{return}\NormalTok{(pr)}
+\NormalTok{\}))}
+
+\NormalTok{preds\_stack}
+\CommentTok{\#\textgreater{} class       : SpatRaster }
+\CommentTok{\#\textgreater{} size        : 100, 200, 5  (nrow, ncol, nlyr)}
+\CommentTok{\#\textgreater{} resolution  : 0.05, 0.05  (x, y)}
+\CommentTok{\#\textgreater{} extent      : 125, 135, {-}13, {-}8  (xmin, xmax, ymin, ymax)}
+\CommentTok{\#\textgreater{} coord. ref. : lon/lat WGS 84 (EPSG:4326) }
+\CommentTok{\#\textgreater{} source(s)   : memory}
+\CommentTok{\#\textgreater{} names       : {-}20015, {-}18095, {-}7385, {-}4835,  1869 }
+\CommentTok{\#\textgreater{} min values  :  0.006,  0.000, 0.000, 0.001, 0.002 }
+\CommentTok{\#\textgreater{} max values  :  0.801,  0.864, 0.931, 0.897, 0.632}
+\end{Highlighting}
+\end{Shaded}
+
+Now we can get the \emph{true} suitability and add it to our predicted
+suitability for comparison.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# get the true\_suit raster}
+\FunctionTok{data}\NormalTok{(true\_suit)}
+\NormalTok{true\_suit }\OtherTok{\textless{}{-}} \FunctionTok{unwrap}\NormalTok{(true\_suit)}
+\FunctionTok{names}\NormalTok{(true\_suit) }\OtherTok{\textless{}{-}} \StringTok{"true suitability"}
+
+\CommentTok{\# add the true\_suit to the preds\_stack}
+\NormalTok{preds\_stack }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(preds\_stack, true\_suit)}
+\NormalTok{preds\_stack}
+\CommentTok{\#\textgreater{} class       : SpatRaster }
+\CommentTok{\#\textgreater{} size        : 100, 200, 6  (nrow, ncol, nlyr)}
+\CommentTok{\#\textgreater{} resolution  : 0.05, 0.05  (x, y)}
+\CommentTok{\#\textgreater{} extent      : 125, 135, {-}13, {-}8  (xmin, xmax, ymin, ymax)}
+\CommentTok{\#\textgreater{} coord. ref. : lon/lat WGS 84 (EPSG:4326) }
+\CommentTok{\#\textgreater{} source(s)   : memory}
+\CommentTok{\#\textgreater{} names       : {-}20015, {-}18095, {-}7385, {-}4835,  1869, true \textasciitilde{}ility }
+\CommentTok{\#\textgreater{} min values  :  0.006,  0.000, 0.000, 0.001, 0.002,           0 }
+\CommentTok{\#\textgreater{} max values  :  0.801,  0.864, 0.931, 0.897, 0.632,           1}
+\end{Highlighting}
+\end{Shaded}
+
+Now we can plot the raster stack of predictions and compare it to the
+\emph{true} habitat suitability that was used to generate the virtual
+species occurrences in the \texttt{ex\_foss} records.
+
+\begin{center}\includegraphics[width=1\linewidth]{TraCESahulMisc_workflow_files/figure-latex/plotPreds-1} \end{center}
+
+We can see that there are changes in habitat suitability through time.
+It's also obvious that the Random Forest SDM is not great at reproducing
+the \emph{true} suitability of the virtual species, however this is to
+be expected as the virtual species used a different modelling approach
+and variables!
+
+\end{document}

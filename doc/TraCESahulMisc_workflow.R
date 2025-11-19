@@ -54,6 +54,7 @@ names(tasmin_monthly_win) <- paste0(lyr_names, "_tasmin")
 #   outdir = paste0(base_dir,"/bioclims"),
 #   bioclims = c(1, 4, 5, 6, 7, 12, 13, 14, 17, 18), # default is to use 1:19
 #   collate = TRUE)
+# bioclims
 
 ## ----bioClimLoad, echo = FALSE, eval = TRUE-----------------------------------
 # This section will run the bioclim extraction only if the output sds doesnt already exist

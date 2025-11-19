@@ -139,9 +139,11 @@ pair_obs <- function(data, ras_list, mask_layer, ras_time, buff_width = NULL,
   if (missing(ras_list) || is.null(ras_list)) {
     stop("'ras_list' must be provided and must not be NULL.")
   }
-  if (!is.list(ras_list) || length(ras_list) == 0L) {
-    stop("'ras_list' must be a non-empty list of SpatRaster objects.")
+  if ((!is.list(ras_list) && !inherits(ras_list, "SpatRasterDataset")) ||
+      length(ras_list) == 0L) {
+    stop("'ras_list' must be a non-empty list or SpatRasterDataset (SDS) of SpatRaster objects.")
   }
+
   if (!all(vapply(ras_list, inherits, logical(1), "SpatRaster"))) {
     stop("'ras_list' must contain only terra::SpatRaster objects.")
   }
