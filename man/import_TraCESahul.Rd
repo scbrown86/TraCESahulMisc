@@ -4,13 +4,20 @@
 \alias{import_TraCESahul}
 \title{Imports the TraCE-Sahul dataset}
 \usage{
-import_TraCESahul(files)
+import_TraCESahul(files, aoi = NULL)
 }
 \arguments{
-\item{files}{A character vector of filepaths pointing to the \emph{TraCE-Sahul} dataset(s).}
+\item{files}{A character vector of filepaths pointing to the
+\emph{TraCE-Sahul} dataset(s).}
+
+\item{aoi}{an \code{\link[terra]{ext}} object or four parameter vector
+(\code{c(xmin,xmax,ymin,ymax)}) passed to \code{\link[terra]{rast}} to
+spatially subset the \emph{TraCE-Sahul} data. Default = \code{NULL} which will
+return the entire spatial domain.}
 }
 \value{
-A \emph{SpatRaster} with updated \code{\link[terra]{time}} index showing the relevant year, and \code{\link[terra]{depth}} representing the month
+A \emph{SpatRaster} with updated \code{\link[terra]{time}} index
+showing the relevant year, and \code{\link[terra]{depth}} representing the month
 
 A \emph{data.table} in the \code{.GlobalEnv} named \code{TraCESahul_time_steps} with the relevant details for all timesteps for \code{files}
 }
@@ -37,17 +44,18 @@ filepaths must be given in order (e.g. 01.nc, 02.nc, 03.nc, 04.nc, 05.nc, 06.nc,
 }
 \examples{
 \dontrun{
-fn <- c("TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_06.nc",
-        "TraCE_22ka_downscaled_pr_1500_1990_biascorr.nc")
-        sahul_pr <- import_TraCESahul(fn)
-sahul_pr
-fn <- c("TraCE_22ka_downscaled_tasmax_decadal_21k_1500CE_biascorr_06.nc",
-        "TraCE_22ka_downscaled_tasmax_1500_1990_biascorr.nc")
-sahul_tasmax <- import_TraCESahul(fn)
-sahul_tasmax
-fn <- c("TraCE_22ka_downscaled_tasmin_decadal_21k_1500CE_biascorr_06.nc",
-        "TraCE_22ka_downscaled_tasmin_1500_1990_biascorr.nc")
-sahul_tasmin <- import_TraCESahul(fn)
-sahul_tasmin
+vars <- c("pr", "tasmax", "tasmin")
+load_tracesahul <- function(base, var) {
+ f1 <- file.path(base, var,
+                 sprintf("TraCE_22ka_downscaled_\%s_decadal_21k_1500CE_biascorr.nc",
+                 var))
+ f2 <- file.path(base, var,
+                 sprintf("TraCE_22ka_downscaled_\%s_1500_1990_biascorr.nc",
+                 var))
+import_TraCESahul(c(f1, f2))
+}
+sahul <- lapply(vars, function(v) load_tracesahul(base_dir, v))
+names(sahul) <- vars
+sahul
 }
 }

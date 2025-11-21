@@ -6,6 +6,8 @@
 #' importing the data. This function is not exported, and should not ever need to
 #' be called directly by the user.
 #'
+#' @keywords internal
+#'
 #' @noRd
 classify_TraCESahul <- function(files) {
   stopifnot(length(files) > 0)
@@ -74,29 +76,37 @@ classify_TraCESahul <- function(files) {
 #' @importFrom terra rast time depth depthName depthUnit
 #' @importFrom pbapply pblapply
 #'
-#' @param files A character vector of filepaths pointing to the \emph{TraCE-Sahul} dataset(s).
-#' @return A \emph{SpatRaster} with updated \code{\link[terra]{time}} index showing the relevant year, and \code{\link[terra]{depth}} representing the month
+#' @param files A character vector of filepaths pointing to the
+#' \emph{TraCE-Sahul} dataset(s).
+#' @param aoi an \code{\link[terra]{ext}} object or four parameter vector
+#' (\code{c(xmin,xmax,ymin,ymax)}) passed to \code{\link[terra]{rast}} to
+#' spatially subset the \emph{TraCE-Sahul} data. Default = \code{NULL} which will
+#' return the entire spatial domain.
+#'
+#' @return A \emph{SpatRaster} with updated \code{\link[terra]{time}} index
+#' showing the relevant year, and \code{\link[terra]{depth}} representing the month
 #'
 #' A \emph{data.table} in the \code{.GlobalEnv} named \code{TraCESahul_time_steps} with the relevant details for all timesteps for \code{files}
 #'
 #' @examples
 #' \dontrun{
-#' fn <- c("TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_06.nc",
-#'         "TraCE_22ka_downscaled_pr_1500_1990_biascorr.nc")
-#'         sahul_pr <- import_TraCESahul(fn)
-#' sahul_pr
-#' fn <- c("TraCE_22ka_downscaled_tasmax_decadal_21k_1500CE_biascorr_06.nc",
-#'         "TraCE_22ka_downscaled_tasmax_1500_1990_biascorr.nc")
-#' sahul_tasmax <- import_TraCESahul(fn)
-#' sahul_tasmax
-#' fn <- c("TraCE_22ka_downscaled_tasmin_decadal_21k_1500CE_biascorr_06.nc",
-#'         "TraCE_22ka_downscaled_tasmin_1500_1990_biascorr.nc")
-#' sahul_tasmin <- import_TraCESahul(fn)
-#' sahul_tasmin
+#' vars <- c("pr", "tasmax", "tasmin")
+#' load_tracesahul <- function(base, var) {
+#'  f1 <- file.path(base, var,
+#'                  sprintf("TraCE_22ka_downscaled_%s_decadal_21k_1500CE_biascorr.nc",
+#'                  var))
+#'  f2 <- file.path(base, var,
+#'                  sprintf("TraCE_22ka_downscaled_%s_1500_1990_biascorr.nc",
+#'                  var))
+#' import_TraCESahul(c(f1, f2))
+#' }
+#' sahul <- lapply(vars, function(v) load_tracesahul(base_dir, v))
+#' names(sahul) <- vars
+#' sahul
 #' }
 #' @export
 #'
-import_TraCESahul <- function(files) {
+import_TraCESahul <- function(files, aoi = NULL) {
   if (!requireNamespace("terra", quietly = TRUE)) stop("Package 'terra' is required.")
   if (!requireNamespace("data.table", quietly = TRUE)) stop("Package 'data.table' is required.")
   out <- classify_TraCESahul(files)
@@ -113,45 +123,47 @@ import_TraCESahul <- function(files) {
     data.table::fread(path)
   }
   get_monthly_years <- function() rep(1500:1989, each = 12)
-  handle_decadal_core <- function(f) {
+  handle_decadal_core <- function(f, aoi) {
     data <- load_timestep_table()
-    ds   <- terra::rast(f)
+    ds   <- terra::rast(f, win = aoi)
     ds   <- set_monthly_metadata(ds, data[["Year"]])
     assign("TraCESahul_time_steps", data, envir = .GlobalEnv)
     ds
   }
-  handle_decadal_single <- function(f,...) {
+  handle_decadal_single <- function(f, aoi) {
     data <- load_timestep_table()
     chunk <- unname(out$chunk_num)
     if (!is.na(chunk)) {
       data <- data[data$file_step == chunk, ]
     }
-    ds <- terra::rast(f)
+    ds <- terra::rast(f, win = aoi)
     ds <- set_monthly_metadata(ds, data$Year)
     assign("TraCESahul_time_steps", data, envir = .GlobalEnv)
     ds
   }
-  handle_monthly_only <- function(f,...) {
-    ds <- terra::rast(f)
+  handle_monthly_only <- function(f, aoi) {
+    ds <- terra::rast(f, win = aoi)
     set_monthly_metadata(ds, get_monthly_years())
   }
-  handle_two_sets <- function(f_decadal, f_monthly,...) {
+  handle_two_sets <- function(f_decadal, f_monthly,aoi) {
     data <- load_timestep_table()
     chunk <- unname(out$chunk_num)
     if (!is.na(chunk)) {
       data <- data[data$file_step == chunk, ]
     }
-    ds1  <- set_monthly_metadata(terra::rast(f_decadal), data$Year)
-    ds2  <- set_monthly_metadata(terra::rast(f_monthly), get_monthly_years())
+    ds1  <- set_monthly_metadata(terra::rast(f_decadal, win = aoi), data$Year)
+    ds2  <- set_monthly_metadata(terra::rast(f_monthly, win = aoi), get_monthly_years())
     assign("TraCESahul_time_steps", data, envir = .GlobalEnv)
     c(ds1, ds2)
   }
   switch(out$case,
-         "decadal_chunks_6" = handle_decadal_core(files),
-         "decadal_single_plus_1500_1990" = handle_two_sets(files[1], files[2]),
-         "1500_1990_single" = handle_monthly_only(files),
-         "decadal_single" = handle_decadal_single(files),
-         "chunks_plus_1500_1990" = handle_two_sets(files[-length(files)], files[length(files)]),
+         "decadal_chunks_6" = handle_decadal_core(files, aoi),
+         "decadal_single_plus_1500_1990" = handle_two_sets(files[1], files[2], aoi),
+         "1500_1990_single" = handle_monthly_only(files, aoi),
+         "decadal_single" = handle_decadal_single(files, aoi),
+         "chunks_plus_1500_1990" = handle_two_sets(files[-length(files)],
+                                                   files[length(files)],
+                                                   aoi),
     stop("Unhandled case.")
   )
 }
