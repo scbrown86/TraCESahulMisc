@@ -148,7 +148,9 @@ import_TraCESahul <- function(files, aoi = NULL) {
   handle_two_sets <- function(f_decadal, f_monthly,aoi) {
     data <- load_timestep_table()
     chunk <- unname(out$chunk_num)
-    if (!is.na(chunk)) {
+    if (is.null(chunk)) {
+      data <- data.table::copy(data)
+    } else if (!is.na(chunk)) {
       data <- data[data$file_step == chunk, ]
     }
     ds1  <- set_monthly_metadata(terra::rast(f_decadal, win = aoi), data$Year)
