@@ -56,8 +56,10 @@
 summarise_TraCESahul <- function(x, type = "annual", sumfun = "mean", window = NULL, ...) {
   stopifnot("x must be output from `import_TraCESahul`" = isTRUE(attr(x, "TraCESahul")))
   stopifnot(
-    "window must be NULL or numeric > 10" =
-      (is.null(window)) || (is.numeric(window) && window >= 10)
+    "window must be NULL or numeric >= 10" =
+      is.null(window) || (is.numeric(window) && window >= 10),
+    "window must be NULL or divisible by 10" =
+      is.null(window) || (window %% 10 == 0)
   )
   type <- match.arg(type, choices = c("annual", "monthly", "seasonal"), several.ok = FALSE)
   # make sure sumfun is suitable
