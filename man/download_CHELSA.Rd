@@ -37,15 +37,15 @@ created if needed.}
 \code{file.path} to the cropped and resampled raster
 }
 \description{
-Downloads a daily CHELSA v2.1 GeoTIFF for a given date and variable via GDAL's
+Downloads a monthly CHELSA v2.1 GeoTIFF for a given date and variable via GDAL's
 virtual file system (\href{https://gdal.org/en/stable/user/virtual_file_systems.html#network-based-file-systems}{\emph{vsicurl}}),
-reads only a buffered window around \code{template}, resamples to the template grid, optionally converts units, and
+reads only a buffered window around \code{template}, resamples to the template grid, optionally masks, converts units, and
 writes the result to disk.
 }
 \details{
 The crop window is hard coded to the extent of \code{template}, buffered by 50 km.
 Output files are written to \code{file.path(dir, var)} and named using the source
-layer name (for example, \code{"CHELSA_pr_01_01_1980_V.2.1.tif"}).
+layer name (for example, \code{"CHELSA_pr_01_1980_V.2.1.tif"}).
 
 Note that the final raster is resampled to match the exact extent of the template raster,
 but data is read/downloaded for the extent of the template + 50km.
@@ -53,7 +53,7 @@ but data is read/downloaded for the extent of the template + 50km.
 If \code{convert = TRUE}:
 
 \code{tasmin} and \code{tasmax} are converted from \emph{Kelvin} to \emph{Celsius}, \code{pr} is
-converted from \emph{mm/day} to \emph{kg m-2 s-1}.
+converted from \emph{mm/month} to \emph{kg m-2 s-1}.
 }
 \examples{
 \dontrun{
@@ -72,6 +72,7 @@ r <- download_CHELSA(
   template = template,
   algo = "cubicspline",
   convert = TRUE,
+  mask = FALSE,
   overwrite = TRUE
 )
 

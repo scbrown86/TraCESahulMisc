@@ -1,16 +1,16 @@
 #' Source daily CHELSA climate rasters
 #'
 #' @description
-#' Downloads a daily CHELSA v2.1 GeoTIFF for a given date and variable via GDAL's
+#' Downloads a monthly CHELSA v2.1 GeoTIFF for a given date and variable via GDAL's
 #' virtual file system (\href{https://gdal.org/en/stable/user/virtual_file_systems.html#network-based-file-systems}{\emph{vsicurl}}),
-#' reads only a buffered window around \code{template}, resamples to the template grid, optionally converts units, and
+#' reads only a buffered window around \code{template}, resamples to the template grid, optionally masks, converts units, and
 #' writes the result to disk.
 #'
 #' @details
 #'
 #' The crop window is hard coded to the extent of \code{template}, buffered by 50 km.
 #' Output files are written to \code{file.path(dir, var)} and named using the source
-#' layer name (for example, \code{"CHELSA_pr_01_01_1980_V.2.1.tif"}).
+#' layer name (for example, \code{"CHELSA_pr_01_1980_V.2.1.tif"}).
 #'
 #' Note that the final raster is resampled to match the exact extent of the template raster,
 #' but data is read/downloaded for the extent of the template + 50km.
@@ -18,7 +18,7 @@
 #' If \code{convert = TRUE}:
 #'
 #' \code{tasmin} and \code{tasmax} are converted from \emph{Kelvin} to \emph{Celsius}, \code{pr} is
-#' converted from \emph{mm/day} to \emph{kg m-2 s-1}.
+#' converted from \emph{mm/month} to \emph{kg m-2 s-1}.
 #'
 #' @importFrom terra rast ext buffer vect crs resample setValues values units varnames writeRaster
 #'
@@ -51,6 +51,7 @@
 #'   template = template,
 #'   algo = "cubicspline",
 #'   convert = TRUE,
+#'   mask = FALSE,
 #'   overwrite = TRUE
 #' )
 #'
@@ -76,11 +77,17 @@ download_CHELSA <- function(x, var, dir, template,
   base_url <- "/vsicurl/https://os.unil.cloud.switch.ch/chelsa02/"
   model <- "chelsa"
   extent <- "global"
+  #https://os.unil.cloud.switch.ch/chelsa02/chelsa/global/monthly/pr/1980/CHELSA_pr_01_1980_V.2.1.tif
+  # url <- paste0(base_url, model, "/", extent,
+  #               "/daily/", var, "/", format(x, "%Y"), "/")
   url <- paste0(base_url, model, "/", extent,
-                "/daily/", var, "/", format(x, "%Y"), "/")
-  file <- sprintf("CHELSA_%s_%s_%s_%s_V.2.1.tif",
-                  var, format(x, "%d"), format(x, "%m"), format(x, "%Y"))
+                "/monthly/", var, "/", format(x, "%Y"), "/")
+  # file <- sprintf("CHELSA_%s_%s_%s_%s_V.2.1.tif",
+  #                 var, format(x, "%d"), format(x, "%m"), format(x, "%Y"))
+  file <- sprintf("CHELSA_%s_%s_%s_V.2.1.tif",
+                  var, format(x, "%m"), format(x, "%Y"))
   src <- paste0(url, file)
+  terra::describe(src)
   dl_ext <- terra::ext(
     terra::buffer(
       terra::vect(terra::ext(template), crs = terra::crs(template)),
@@ -97,7 +104,10 @@ download_CHELSA <- function(x, var, dir, template,
       terra::units(r_res) <- "deg_C"
       terra::varnames(r_res) <- var
     } else {
-      r_res <- terra::setValues(x = r_res,values = terra::values(r_res) / 86400)
+      month_i <- as.integer(format(x, "%m"))
+      dmon <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+      sec_in_month <- dmon[month_i] * 86400
+      r_res <- terra::setValues(r_res, values = terra::values(r_res) / sec_in_month)
       terra::units(r_res) <- "kg m-2 s-1"
       terra::varnames(r_res) <- var
     }
