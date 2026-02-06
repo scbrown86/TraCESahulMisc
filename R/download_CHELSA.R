@@ -28,6 +28,7 @@
 #'   created if needed.
 #' @param template \code{\link[terra:rast]{SpatRast}} grid for resampling and cropping. Should be a \emph{TraCE-Sahul} grid.
 #' @param algo Character. Resampling method passed to \code{\link[terra]{resample}}.
+#' @param mask Logical. If \code{TRUE} mask to the non-NA values of the template raster
 #' @param convert Logical. If \code{TRUE}, apply variable-specific unit conversion.
 #' @param ... Additional arguments passed to \code{\link[terra]{writeRaster}}.
 #'
@@ -57,7 +58,8 @@
 #' }
 #' @export
 download_CHELSA <- function(x, var, dir, template,
-                            algo = "cubicspline", convert = TRUE, ...) {
+                            algo = "cubicspline", mask = TRUE,
+                            convert = TRUE, ...) {
   if (!inherits(x, "Date")) {
     stop("'x' must be a Date")
   }
@@ -85,6 +87,9 @@ download_CHELSA <- function(x, var, dir, template,
       width = 50 * 1000))
   r <- terra::rast(src, win = dl_ext)
   r_res <- terra::resample(r, template, method = algo)
+  if (mask) {
+    r_res <- terra::mask(r_res, template)
+  }
   if (convert) {
     if (var %in% c("tasmax", "tasmin")) {
       r_res <- terra::setValues(x = r_res,

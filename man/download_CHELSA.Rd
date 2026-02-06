@@ -10,6 +10,7 @@ download_CHELSA(
   dir,
   template,
   algo = "cubicspline",
+  mask = TRUE,
   convert = TRUE,
   ...
 )
@@ -25,6 +26,8 @@ created if needed.}
 \item{template}{\code{\link[terra:rast]{SpatRast}} grid for resampling and cropping. Should be a \emph{TraCE-Sahul} grid.}
 
 \item{algo}{Character. Resampling method passed to \code{\link[terra]{resample}}.}
+
+\item{mask}{Logical. If \code{TRUE} mask to the non-NA values of the template raster}
 
 \item{convert}{Logical. If \code{TRUE}, apply variable-specific unit conversion.}
 
