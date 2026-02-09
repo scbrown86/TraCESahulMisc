@@ -79,3 +79,4 @@ r <- download_CHELSA(
 r
 }
 }
+\keyword{internal}

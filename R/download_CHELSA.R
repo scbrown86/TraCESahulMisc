@@ -57,7 +57,8 @@
 #'
 #' r
 #' }
-#' @export
+#' @keywords internal
+#'
 download_CHELSA <- function(x, var, dir, template,
                             algo = "cubicspline", mask = TRUE,
                             convert = TRUE, ...) {
