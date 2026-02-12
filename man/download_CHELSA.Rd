@@ -12,6 +12,7 @@ download_CHELSA(
   algo = "cubicspline",
   mask = TRUE,
   convert = TRUE,
+  redo = FALSE,
   ...
 )
 }
@@ -30,6 +31,8 @@ created if needed.}
 \item{mask}{Logical. If \code{TRUE} mask to the non-NA values of the template raster}
 
 \item{convert}{Logical. If \code{TRUE}, apply variable-specific unit conversion.}
+
+\item{redo}{Logical. Whether to re-download and reprocess files that already exist.}
 
 \item{...}{Additional arguments passed to \code{\link[terra]{writeRaster}}.}
 }

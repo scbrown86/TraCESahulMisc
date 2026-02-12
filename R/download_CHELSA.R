@@ -30,6 +30,7 @@
 #' @param algo Character. Resampling method passed to \code{\link[terra]{resample}}.
 #' @param mask Logical. If \code{TRUE} mask to the non-NA values of the template raster
 #' @param convert Logical. If \code{TRUE}, apply variable-specific unit conversion.
+#' @param redo Logical. Whether to re-download and reprocess files that already exist.
 #' @param ... Additional arguments passed to \code{\link[terra]{writeRaster}}.
 #'
 #' @return \code{file.path} to the cropped and resampled raster
@@ -61,7 +62,8 @@
 #'
 download_CHELSA <- function(x, var, dir, template,
                             algo = "cubicspline", mask = TRUE,
-                            convert = TRUE, ...) {
+                            convert = TRUE, redo = FALSE,
+                            ...) {
   if (!inherits(x, "Date")) {
     stop("'x' must be a Date")
   }
@@ -69,12 +71,17 @@ download_CHELSA <- function(x, var, dir, template,
   if (!inherits(template, "SpatRaster")) {
     stop("'template' must be a SpatRaster")
   }
+  stopifnot(is.logical(redo), length(redo) == 1L, !is.na(redo))
   out_dir <- file.path(dir, var)
   if (!dir.exists(out_dir)) {
     message(sprintf("Creating download directory: %s", out_dir))
     dir.create(out_dir, recursive = TRUE, showWarnings = TRUE)
   }
   out_dir <- normalizePath(out_dir, mustWork = TRUE)
+  out_file <- file.path(out_dir, paste0(terra::names(r), ".tif"))
+  if (!isTRUE(redo) && file.exists(out_file)) {
+    return(out_file)
+  }
   base_url <- "/vsicurl/https://os.unil.cloud.switch.ch/chelsa02/"
   model <- "chelsa"
   extent <- "global"
