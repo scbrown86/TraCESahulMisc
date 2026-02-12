@@ -78,10 +78,6 @@ download_CHELSA <- function(x, var, dir, template,
     dir.create(out_dir, recursive = TRUE, showWarnings = TRUE)
   }
   out_dir <- normalizePath(out_dir, mustWork = TRUE)
-  out_file <- file.path(out_dir, paste0(terra::names(r), ".tif"))
-  if (!isTRUE(redo) && file.exists(out_file)) {
-    return(out_file)
-  }
   base_url <- "/vsicurl/https://os.unil.cloud.switch.ch/chelsa02/"
   model <- "chelsa"
   extent <- "global"
@@ -95,12 +91,16 @@ download_CHELSA <- function(x, var, dir, template,
   file <- sprintf("CHELSA_%s_%s_%s_V.2.1.tif",
                   var, format(x, "%m"), format(x, "%Y"))
   src <- paste0(url, file)
-  terra::describe(src)
+  # terra::describe(src)
   dl_ext <- terra::ext(
     terra::buffer(
       terra::vect(terra::ext(template), crs = terra::crs(template)),
       width = 50 * 1000))
   r <- terra::rast(src, win = dl_ext)
+  out_file <- file.path(out_dir, paste0(terra::names(r), ".tif"))
+  if (!isTRUE(redo) && file.exists(out_file)) {
+    return(out_file)
+  }
   r_res <- terra::resample(r, template, method = algo)
   if (mask) {
     r_res <- terra::mask(r_res, template)
