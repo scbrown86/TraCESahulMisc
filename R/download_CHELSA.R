@@ -101,7 +101,11 @@ download_CHELSA <- function(x, var, dir, template,
   if (!isTRUE(redo) && file.exists(out_file)) {
     return(out_file)
   }
-  r_res <- terra::resample(r, template, method = algo)
+  if (isTRUE(all.equal(res(r), res(template)))) {
+    r_res <- r
+  } else {
+    r_res <- terra::resample(r, template, method = algo)
+  }
   if (mask) {
     r_res <- terra::mask(r_res, template)
   }
