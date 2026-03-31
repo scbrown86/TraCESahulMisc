@@ -39,3 +39,19 @@
 #' true_suit
 #' }
 "true_suit"
+
+#' Timesteps for TraCE-Sahul
+#'
+#' A data.table object containing the timesteps for each layer in the
+#' TraCE-Sahul downscaled climate data.
+#'
+#' @source data-raw/ex_foss.R
+#' @usage data(TraCESahul_timesteps)
+#' @format A \code{\link[data.table:data.table]{DataTable}} of 31,740 rows and
+#' 11 columns
+#' @examples
+#' \dontrun{
+#' library(data.table)
+#' TraCESahul_timesteps
+#' }
+"TraCESahul_timesteps"

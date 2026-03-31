@@ -97,3 +97,47 @@ ex_foss <- terra::wrap(ex_foss)
 usethis::use_data(ex_foss, version = 3, overwrite = TRUE)
 true_suit <- terra::wrap(realistic.sp$suitab.raster)
 usethis::use_data(true_suit, version = 3, overwrite = TRUE)
+
+# Timesteps
+library(data.table)
+
+# Create the paleo timesteps
+n <- 25860
+n_decades <- n / 12  # 2155
+steps <- seq(1, by = 120, length.out = n_decades)
+ends <- steps + 119
+mids_months <- (steps + ends) / 2
+mids_years <- mids_months / 12
+time_bp <- 22000 - mids_years
+time_steps <- data.table(
+  layerID = 1:n,
+  dec = rep(1:n_decades, each = 12),
+  Month = rep(1:12, times = n_decades),
+  YearsBP = rep(ceiling(time_bp), each = 12),
+  file_step = c(rep(1:5, each = 4812), rep(6, times = 1800)))
+# time_steps
+time_steps[, YearsCE := 1950 - YearsBP]
+time_steps[, dec_year := YearsCE + (Month - 1 + 15.5 / 30.4375) / 12]
+time_steps[, `:=`(StartYearCE = YearsCE - 5,
+                  EndYearCE = YearsCE + 4,
+                  StartYearBP = YearsBP + 5,
+                  EndYearBP = YearsBP - 4)]
+# Post 1500 timesteps
+monthly_years <- rep(1500:1989, each = 12)
+monthly_months <- rep(1:12, times = 490)
+monthly_rows <- data.table(
+  layerID = (n + 1):(n + 490 * 12),
+  dec = NA_integer_,
+  Month = monthly_months,
+  YearsBP = 1950L - monthly_years,
+  YearsCE = monthly_years,
+  file_step = NA_integer_)
+monthly_rows[, dec_year := YearsCE + (Month - 1 + 15.5 / 30.4375) / 12]
+monthly_rows[, `:=`(StartYearCE = YearsCE,
+                    EndYearCE = YearsCE,
+                    StartYearBP = YearsBP,
+                    EndYearBP = YearsBP)]
+
+# combine
+TraCESahul_timesteps <- rbind(time_steps, monthly_rows)
+usethis::use_data(TraCESahul_timesteps, version = 3, overwrite = TRUE)
