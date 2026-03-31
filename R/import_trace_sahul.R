@@ -12,41 +12,49 @@
 classify_TraCESahul <- function(files) {
   stopifnot(length(files) > 0)
   bfiles <- basename(files)
-  vars <- sub("^TraCE_22ka_downscaled_([^_]+)_.*$", "\\1", bfiles)
-  stopifnot("Only a single variable can be processed at a time. Check your input files." = length(unique(vars)) == 1)
-  is_1500_1990 <- endsWith(bfiles, "1500_1990_biascorr.nc")
-  chunk_pattern <- "_biascorr_([0-9]{2})\\.nc$"
-  chunk_extract <- function(x) {
-    m <- regexec(chunk_pattern, x)
-    mm <- regmatches(x, m)
-    if (length(mm[[1]]) == 2) as.integer(mm[[1]][2]) else NA_integer_
+  pat_chunk   <- "^TraCE-Sahul_decadal_22k_1500CE_([a-z]+)_([0-9]{2})\\.nc$"
+  pat_single  <- "^TraCE-Sahul_decadal_22k_1500CE_([a-z]+)\\.nc$"
+  pat_annual  <- "^TraCE-Sahul_annual_1500_1990_([a-z]+)\\.nc$"
+  m_chunk  <- regexec(pat_chunk, bfiles)
+  r_chunk  <- regmatches(bfiles, m_chunk)
+  m_single <- regexec(pat_single, bfiles)
+  r_single <- regmatches(bfiles, m_single)
+  m_annual <- regexec(pat_annual, bfiles)
+  r_annual <- regmatches(bfiles, m_annual)
+  is_chunk  <- lengths(r_chunk) == 3
+  is_single <- lengths(r_single) == 2
+  is_annual <- lengths(r_annual) == 2
+  if (!all(is_chunk | is_single | is_annual)) {
+    stop("Filenames do not match expected TraCE-Sahul naming convention.")
   }
-  chunk_nums <- vapply(bfiles, chunk_extract, integer(1))
-  is_chunk <- !is.na(chunk_nums)
+  vars <- character(length(bfiles))
+  vars[is_chunk]  <- vapply(r_chunk[is_chunk],  `[`, character(1), 2)
+  vars[is_single] <- vapply(r_single[is_single], `[`, character(1), 2)
+  vars[is_annual] <- vapply(r_annual[is_annual], `[`, character(1), 2)
+  if (length(unique(vars)) != 1) {
+    stop("All files must use the same variable.")
+  }
+  chunk_nums <- rep(NA_integer_, length(bfiles))
+  chunk_nums[is_chunk] <- as.integer(vapply(r_chunk[is_chunk],
+                                            `[`, character(1), 3))
   n <- length(files)
-  if (n == 1 && is_1500_1990) {
-    return(list(case = "1500_1990_single", var = unique(vars), n = 1))
+  if (n == 1 && is_annual) {
+    return(list(case = "1500_1990_single", var = vars[1], n = 1))
   }
-  if (n == 1 && (endsWith(bfiles, "21k_1500CE_biascorr.nc") || is_chunk)) {
-    return(list(case = "decadal_single", var = unique(vars), n = 1, chunk_num = chunk_nums))
+  if (n == 1 && (is_single || is_chunk)) {
+    return(list(case = "decadal_single", var = vars[1], n = 1, chunk_num = chunk_nums))
   }
-  if (n == 6 && all(is_chunk) && identical(unname(chunk_nums), 1:6)) {
-    return(list(case = "decadal_chunks_6", var = unique(vars), n = 6))
+  if (n == 6 && all(is_chunk) && identical(chunk_nums, 1:6)) {
+    return(list(case = "decadal_chunks_6", var = vars[1], n = 6))
   }
-  if (n == 7) {
-    first6 <- bfiles[1:6]
-    last1  <- bfiles[7]
-    nums6 <- vapply(first6, chunk_extract, integer(1))
-    if (identical(unname(nums6), 1:6) &&
-        endsWith(last1, "1500_1990_biascorr.nc"))
-      return(list(case = "chunks_plus_1500_1990", var = unique(vars), n = 7))
+  if (n == 7 && all(is_chunk[1:6]) && is_annual[7] && identical(chunk_nums[1:6], 1:6)) {
+    return(list(case = "chunks_plus_1500_1990", var = vars[1], n = 7))
   }
-  if (n == 2 &&
-      (endsWith(bfiles[1], "21k_1500CE_biascorr.nc") || is_chunk[1]) &&
-      is_1500_1990[2]) {
-    return(list(case = "decadal_single_plus_1500_1990", var = unique(vars), n = 2, chunk_num = chunk_nums[1]))
+  if (n == 2 && (is_single[1] || is_chunk[1]) && is_annual[2]) {
+    return(list(case = "decadal_single_plus_1500_1990", var = vars[1],
+                n = 2, chunk_num = chunk_nums[1]))
   }
-  stop("Filename set does not match any expected ordered pattern. Have you changed the filenames?")
+  stop("Filename set is valid but not a recognised combination or order.")
 }
 
 #' Imports the TraCE-Sahul dataset
@@ -55,8 +63,8 @@ classify_TraCESahul <- function(files) {
 #' This function returns a \code{\link[terra:rast]{SpatRast}} representing the
 #' full (or a subset) \emph{TraCE-Sahul} dataset. Internally the
 #' function reads a CSV of timesteps from \code{inst/extdata/TraCE-Sahul_timesteps.csv},
-#' and exports it to the \code{.GlobalEnv}. This data.table is \emph{only} relevant
-#' to the decadal data.
+#' and exports it to the \code{.GlobalEnv}. This data.table contains all the timesteps
+#' for every layer in the TraCE-Sahul dataset.
 #'
 #' If the monthly data from 1500-1989 is also provided, it will be appended.
 #'
@@ -64,13 +72,14 @@ classify_TraCESahul <- function(files) {
 #' The function will stop if \code{x} is not a file.path or series of file.paths.
 #'
 #' The function will work with the subsets of the decadal data
-#' e.g \emph{TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_01.nc}
-#' provided that they haven't been renamed!
+#' e.g \emph{TraCE-Sahul_decadal_22k_1500CE_pr_01.nc} provided that they haven't
+#' been renamed!
 #'
 #' @note
 #' The function will fail if the \emph{TraCE-Sahul} datasets have been renamed.
 #'
-#' filepaths must be given in order (e.g. 01.nc, 02.nc, 03.nc, 04.nc, 05.nc, 06.nc, 1500_1990_biascorr.nc)
+#' filepaths must be given in order (e.g. 01.nc, 02.nc, 03.nc, 04.nc, 05.nc, 06.nc),
+#' with the monthly data from 1500 to 1989 provided last
 #'
 #' @import data.table
 #' @importFrom terra rast time depth depthName depthUnit
@@ -90,19 +99,52 @@ classify_TraCESahul <- function(files) {
 #'
 #' @examples
 #' \dontrun{
+#' base_dir <- "~/Documents/TraCE-Sahul"
 #' vars <- c("pr", "tasmax", "tasmin")
-#' load_tracesahul <- function(base, var) {
-#'  f1 <- file.path(base, var,
-#'                  sprintf("TraCE_22ka_downscaled_%s_decadal_21k_1500CE_biascorr.nc",
-#'                  var))
-#'  f2 <- file.path(base, var,
-#'                  sprintf("TraCE_22ka_downscaled_%s_1500_1990_biascorr.nc",
-#'                  var))
-#' import_TraCESahul(c(f1, f2))
+#'
+#' # Example 1: full decadal data (no chunk) + annual, all variables
+#' load_full <- function(base, var) {
+#'   f1 <- file.path(base, var,
+#'                   sprintf("TraCE-Sahul_decadal_22k_1500CE_%s.nc", var))
+#'   f2 <- file.path(base, var,
+#'                   sprintf("TraCE-Sahul_annual_1500_1990_%s.nc", var))
+#'   import_TraCESahul(files = c(f1, f2))
 #' }
-#' sahul <- lapply(vars, function(v) load_tracesahul(base_dir, v))
-#' names(sahul) <- vars
-#' sahul
+#' sahul_full <- lapply(vars, function(v) load_full(base_dir, v))
+#' names(sahul_full) <- vars
+#' sahul_full
+#'
+#' # Example 2: chunk 6 only + annual, all variables
+#' load_chunk6 <- function(base, var) {
+#'   f1 <- file.path(base, var,
+#'                   sprintf("TraCE-Sahul_decadal_22k_1500CE_%s_06.nc", var))
+#'   f2 <- file.path(base, var,
+#'                   sprintf("TraCE-Sahul_annual_1500_1990_%s.nc", var))
+#'   import_TraCESahul(files = c(f1, f2))
+#' }
+#' sahul_chunk6 <- lapply(vars, function(v) load_chunk6(base_dir, v))
+#' names(sahul_chunk6) <- vars
+#' sahul_chunk6
+#'
+#' # Example 3: chunk 3 only, all variables
+#' load_chunk3 <- function(base, var) {
+#'   f <- file.path(base, var,
+#'                  sprintf("TraCE-Sahul_decadal_22k_1500CE_%s_03.nc", var))
+#'   import_TraCESahul(files = f)
+#' }
+#' sahul_chunk3 <- lapply(vars, function(v) load_chunk3(base_dir, v))
+#' names(sahul_chunk3) <- vars
+#' sahul_chunk3
+#'
+#' # Example 4: monthly only, all variables
+#' load_monthly <- function(base, var) {
+#'   f <- file.path(base, var,
+#'                  sprintf("TraCE-Sahul_annual_1500_1990_%s.nc", var))
+#'  import_TraCESahul(files = f)
+#'  }
+#' sahul_monthly <- lapply(vars, function(v) load_monthly(base_dir, v))
+#' names(sahul_monthly) <- vars
+#' sahul_monthly
 #' }
 #' @export
 #'
@@ -115,6 +157,7 @@ import_TraCESahul <- function(files, aoi = NULL) {
     terra::depthName(ds) <- "Month"
     terra::depthUnit(ds) <- "calendar month"
     terra::time(ds) <- years
+    terra::crs(ds) <- "EPSG:4326"
     attr(ds, "TraCESahul") <- TRUE
     ds
   }
@@ -126,7 +169,8 @@ import_TraCESahul <- function(files, aoi = NULL) {
   handle_decadal_core <- function(f, aoi) {
     data <- load_timestep_table()
     ds   <- terra::rast(f, win = aoi)
-    ds   <- set_monthly_metadata(ds, data[["Year"]])
+    terra::crs(ds) <- "EPSG:4326"
+    ds   <- set_monthly_metadata(ds, data[["YearsCE"]])
     assign("TraCESahul_time_steps", data, envir = .GlobalEnv)
     ds
   }
@@ -134,10 +178,10 @@ import_TraCESahul <- function(files, aoi = NULL) {
     data <- load_timestep_table()
     chunk <- unname(out$chunk_num)
     if (!is.na(chunk)) {
-      data <- data[data$file_step == chunk, ]
+      data <- data.table::copy(data)[data$file_step == chunk, ]
     }
     ds <- terra::rast(f, win = aoi)
-    ds <- set_monthly_metadata(ds, data$Year)
+    ds <- set_monthly_metadata(ds, data[["YearsCE"]])
     assign("TraCESahul_time_steps", data, envir = .GlobalEnv)
     ds
   }
@@ -148,12 +192,12 @@ import_TraCESahul <- function(files, aoi = NULL) {
   handle_two_sets <- function(f_decadal, f_monthly,aoi) {
     data <- load_timestep_table()
     chunk <- unname(out$chunk_num)
-    if (is.null(chunk)) {
-      data <- data.table::copy(data)
+    if (is.null(chunk) || is.na(chunk)) {
+      data <- data.table::copy(data)[!is.na(data$file_step), ]
     } else if (!is.na(chunk)) {
-      data <- data[data$file_step == chunk, ]
+      data <- data.table::copy(data)[data$file_step == chunk, ]
     }
-    ds1  <- set_monthly_metadata(terra::rast(f_decadal, win = aoi), data$Year)
+    ds1  <- set_monthly_metadata(terra::rast(f_decadal, win = aoi), data$YearsCE)
     ds2  <- set_monthly_metadata(terra::rast(f_monthly, win = aoi), get_monthly_years())
     assign("TraCESahul_time_steps", data, envir = .GlobalEnv)
     c(ds1, ds2)

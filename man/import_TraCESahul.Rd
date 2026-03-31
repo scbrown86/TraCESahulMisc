@@ -25,8 +25,8 @@ A \emph{data.table} in the \code{.GlobalEnv} named \code{TraCESahul_time_steps} 
 This function returns a \code{\link[terra:rast]{SpatRast}} representing the
 full (or a subset) \emph{TraCE-Sahul} dataset. Internally the
 function reads a CSV of timesteps from \code{inst/extdata/TraCE-Sahul_timesteps.csv},
-and exports it to the \code{.GlobalEnv}. This data.table is \emph{only} relevant
-to the decadal data.
+and exports it to the \code{.GlobalEnv}. This data.table contains all the timesteps
+for every layer in the TraCE-Sahul dataset.
 
 If the monthly data from 1500-1989 is also provided, it will be appended.
 }
@@ -34,28 +34,62 @@ If the monthly data from 1500-1989 is also provided, it will be appended.
 The function will stop if \code{x} is not a file.path or series of file.paths.
 
 The function will work with the subsets of the decadal data
-e.g \emph{TraCE_22ka_downscaled_pr_decadal_21k_1500CE_biascorr_01.nc}
-provided that they haven't been renamed!
+e.g \emph{TraCE-Sahul_decadal_22k_1500CE_pr_01.nc} provided that they haven't
+been renamed!
 }
 \note{
 The function will fail if the \emph{TraCE-Sahul} datasets have been renamed.
 
-filepaths must be given in order (e.g. 01.nc, 02.nc, 03.nc, 04.nc, 05.nc, 06.nc, 1500_1990_biascorr.nc)
+filepaths must be given in order (e.g. 01.nc, 02.nc, 03.nc, 04.nc, 05.nc, 06.nc),
+with the monthly data from 1500 to 1989 provided last
 }
 \examples{
 \dontrun{
+base_dir <- "~/Documents/TraCE-Sahul"
 vars <- c("pr", "tasmax", "tasmin")
-load_tracesahul <- function(base, var) {
- f1 <- file.path(base, var,
-                 sprintf("TraCE_22ka_downscaled_\%s_decadal_21k_1500CE_biascorr.nc",
-                 var))
- f2 <- file.path(base, var,
-                 sprintf("TraCE_22ka_downscaled_\%s_1500_1990_biascorr.nc",
-                 var))
-import_TraCESahul(c(f1, f2))
+
+# Example 1: full decadal data (no chunk) + annual, all variables
+load_full <- function(base, var) {
+  f1 <- file.path(base, var,
+                  sprintf("TraCE-Sahul_decadal_22k_1500CE_\%s.nc", var))
+  f2 <- file.path(base, var,
+                  sprintf("TraCE-Sahul_annual_1500_1990_\%s.nc", var))
+  import_TraCESahul(files = c(f1, f2))
 }
-sahul <- lapply(vars, function(v) load_tracesahul(base_dir, v))
-names(sahul) <- vars
-sahul
+sahul_full <- lapply(vars, function(v) load_full(base_dir, v))
+names(sahul_full) <- vars
+sahul_full
+
+# Example 2: chunk 6 only + annual, all variables
+load_chunk6 <- function(base, var) {
+  f1 <- file.path(base, var,
+                  sprintf("TraCE-Sahul_decadal_22k_1500CE_\%s_06.nc", var))
+  f2 <- file.path(base, var,
+                  sprintf("TraCE-Sahul_annual_1500_1990_\%s.nc", var))
+  import_TraCESahul(files = c(f1, f2))
+}
+sahul_chunk6 <- lapply(vars, function(v) load_chunk6(base_dir, v))
+names(sahul_chunk6) <- vars
+sahul_chunk6
+
+# Example 3: chunk 3 only, all variables
+load_chunk3 <- function(base, var) {
+  f <- file.path(base, var,
+                 sprintf("TraCE-Sahul_decadal_22k_1500CE_\%s_03.nc", var))
+  import_TraCESahul(files = f)
+}
+sahul_chunk3 <- lapply(vars, function(v) load_chunk3(base_dir, v))
+names(sahul_chunk3) <- vars
+sahul_chunk3
+
+# Example 4: monthly only, all variables
+load_monthly <- function(base, var) {
+  f <- file.path(base, var,
+                 sprintf("TraCE-Sahul_annual_1500_1990_\%s.nc", var))
+ import_TraCESahul(files = f)
+ }
+sahul_monthly <- lapply(vars, function(v) load_monthly(base_dir, v))
+names(sahul_monthly) <- vars
+sahul_monthly
 }
 }
