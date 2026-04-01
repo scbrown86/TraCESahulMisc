@@ -35,8 +35,9 @@
 #'
 #' @details
 #' If precipitation is supplied in \code{"kg m-2 s-1"}, it is multiplied by
-#' \code{pr_scale} prior to bioclimatic calculations. The default scaling converts
-#' from \code{"kg m-2 s-1"} to \code{"mm/day"}. To convert to
+#' \code{pr_scale} prior to bioclimatic calculations. The default units in TraCE-Sahul
+#' are \code{mm/month} so this is effectively ignored unless you have manually changed the units.
+#' The default scaling converts from \code{"kg m-2 s-1"} to \code{"mm/day"}. To convert to
 #' monthly totals in \code{mm/month}, a vector of month-specific multipliers
 #' can be supplied:
 #'

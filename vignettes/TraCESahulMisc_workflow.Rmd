@@ -1,8 +1,6 @@
 ---
 title: "TraCESahulMisc: Workflow Vignette"
-output:
-  rmarkdown::html_vignette: default
-  pdf_document: default
+output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{TraCESahulMisc: Workflow Vignette}
   %\VignetteEngine{knitr::rmarkdown}
@@ -22,12 +20,13 @@ This vignette provides a worked example using `TraCESahulMisc` to load downscale
 
 # Installing and loading packages
 
-For the vignette we need three packages.
+For the vignette we need four packages.
 
 ```{r loadLibs}
 library(TraCESahulMisc)
 library(terra)
 library(randomForest)
+library(pbapply)
 
 # only for plotting
 library(rnaturalearth)
@@ -54,13 +53,13 @@ vars <- c("pr", "tasmax", "tasmin")
 load_tracesahul <- function(base, var) {
   d <- file.path(base, var)
   pat_dec <- sprintf(
-    "TraCE_22ka_downscaled_%s_decadal_21k_1500CE_biascorr_0[1-6]\\.nc$", var)
+    "TraCE-Sahul_decadal_22k_1500CE_%s_0[1-6]\\.nc$", var)
   f_dec <- list.files(d, pattern = pat_dec, full.names = TRUE)
   if (length(f_dec) == 0L) {
     stop("No valid decadal chunk files (01–06) found for ", var)
   }
   idx <- sub(
-    sprintf("TraCE_22ka_downscaled_%s_decadal_21k_1500CE_biascorr_(0[1-6])\\.nc$", var),
+    sprintf(".*TraCE-Sahul_decadal_22k_1500CE_%s_(\\d{2})\\.nc$", var),
     "\\1", basename(f_dec))
   idx_int <- as.integer(idx)
   if (!all(idx_int %in% 1:6)) {
@@ -70,7 +69,7 @@ load_tracesahul <- function(base, var) {
     stop("Expected six decadal chunk files (01–06) for ", var, ", but found ", length(idx_int), ".")
   }
   f_dec <- f_dec[order(idx_int)]
-  f_1500 <- file.path(d, sprintf("TraCE_22ka_downscaled_%s_1500_1990_biascorr.nc", var))
+  f_1500 <- file.path(d, sprintf("TraCE-Sahul_annual_1500_1990_%s.nc", var))
   if (!file.exists(f_1500)) {
     stop("1500_1990 file not found for ", var)
   }
@@ -92,6 +91,8 @@ Monthly and seasonal summaries can be taken across the full record or grouped in
 Seasonal summaries follow austral seasons. December is treated as belonging to the following year/timestep to ensure correct DJF alignment, including when time steps are spaced irregularly or when windowed summaries are requested.
 
 Below, the imported data is aggregated to monthly averages using a 30-year right aligned window.
+
+This step is not necessary if you want to use the data "as-is".
 
 ```{r timeAgg}
 pr_monthly_win <- summarise_TraCESahul(sahul$pr, type = "monthly",
@@ -115,38 +116,41 @@ The function requires monthly maximum temperature, minimum temperature, and prec
 
 Ideally, the data should be the output from `summarise_TraCESahul` as there are a number of checks performed on the data, which are guaranteed to pass if the data has been aggregated with `summarise_TraCESahul`.
 
-Precipitation data is automatically converted from a flux (i.e. kg m-2 s-1) to a rate (mm/day) if the units are set. See the `pr_scale` and `new_units` arguments for further details.
+Precipitation data can be converted from a flux (i.e. kg m-2 s-1) to a rate (mm/day) if the units are set as such. The default units for the TraCE-Sahul precipitation data are mm/month, so this step should not be necessary unless you have changed the data. See the `pr_scale` and `new_units` arguments for further details.
 
-Data is automatically saved into a output directory that can be specified. If not specified a `tempdir()` is created and the user is notified of the location of the directory so files can be retrieved.
+Data is automatically saved into a output directory that can be specified. If not specified a `tempdir()` is created and the user is notified of the location of the directory so files can be retrieved. The output directory is automatically created if it does not yet exist.
 
 Optionally, the data can be collated so that each item in the list that is returned is one variable. The alternative `collate = FALSE` results in each item in the list being all the bioclim variables for a given year.
 
 ```{r bioclim, eval = FALSE, echo=TRUE}
+bioclims_dir <- "~/Desktop/TraCE-Sahul_bioclim"
+
 bioclims <- bioclim_TraCESahul(
   tasmax = tasmax_monthly_win,
   tasmin = tasmin_monthly_win,
   pr = pr_monthly_win,
-  # store in a folder in basedir. Not recommended
-  outdir = normalizePath(base_dir,"/bioclims"),
-  bioclims = c(1, 4, 5, 6, 7, 12, 13, 14, 17, 18), # default is to use 1:19
+  outdir = bioclims_dir,
+  # default is to use bioclims 1:19
+  bioclims = c(1, 4, 5, 6, 7, 12, 13, 14, 17, 18), 
   collate = TRUE)
 bioclims
 ```
 
 ```{r bioClimLoad, echo = FALSE, eval = TRUE}
+bioclims_dir <- "~/Desktop/TraCE-Sahul_bioclim"
 # This section will run the bioclim extraction only if the output sds doesnt already exist
-if (!file.exists(file.path(paste0(base_dir,"/bioclims"), "bioclims_TraCESahul.RDS"))) {
+if (!file.exists(file.path(bioclims_dir, "bioclims_TraCESahul.RDS"))) {
   bioclims <- bioclim_TraCESahul(
   tasmax = tasmax_monthly_win,
   tasmin = tasmin_monthly_win,
   pr = pr_monthly_win,
-  # store in a folder in basedir. Not recommended
-  outdir = paste0(base_dir,"/bioclims"),
-  bioclims = c(1, 4, 5, 6, 7, 12, 13, 14, 17, 18), # default is to use 1:19
+  outdir = bioclims_dir,
+  bioclims = c(1, 4, 5, 6, 7, 12, 13, 14, 17, 18),
   collate = TRUE)
 } else {
-  bioclims <- terra::unwrap(readRDS(file.path(paste0(base_dir,"/bioclims"), "bioclims_TraCESahul.RDS")))
+  bioclims <- terra::unwrap(readRDS(file.path(bioclims_dir, "bioclims_TraCESahul.RDS")))
 }
+bioclims
 ```
 A quick plot shows the first item in the list is all the BIO01 (mean annual temperature) results.
 
@@ -160,7 +164,6 @@ panel(bioclims$bio01[[round(quantile(1:n, probs = seq(0, 1, length.out = 6)))]],
       background = "grey90",
       nc = 2,
       plg = list(
-        legend = "Suitability",
         title = "BIO01 (°C)",
         title.x = 136.75,
         title.y = -10.7,
@@ -186,7 +189,7 @@ Here we generate the mask required by the fossil matching function.
 ```{r}
 # make a mask using bio01
 mask_ras <- bioclims$bio01
-mask_ras <- ifel(is.na(mask_ras), NA, 1)
+mask_ras <- ifel(is.na(mask_ras), 0, 1)
 ```
 
 # Fossil matching
@@ -260,13 +263,14 @@ foss_matched_bioclim <- pair_obs(
   ras_time = terra::time(bioclims$bio01),
   window = 30, # 30-year window
   neigh = 8, # 8-neighbours (rook)
-  prec = 3, # 3 decimal places
+  prec = 2, # 2 decimal places
   summ_stat = "mean",
   dist_cut = 50, # km
   # parallel is disabled and will be set to 1 if any other value is given
   cores = 1L, 
   buff_width = NULL
 )
+foss_matched_bioclim
 ```
 
 # Species distribution modelling
@@ -281,14 +285,14 @@ The down-sampling approach for random forests ensures that each tree in the Rand
 
 Here we generate 12,600 background points (50 samples x 252 timesteps)
 
-```{r extractBG}
+```{r extractBG, eval = FALSE, echo = TRUE}
 # which timesteps from the TraCE-Sahul data are included in our fossil matched data
 tidx <- which(terra::time(bioclims$bio01) %in% foss_matched_bioclim$Year)
 
 # extract bg points.
 ## seed is set for reproducability
 {set.seed(84564)
-bg_points <- lapply(tidx, function(t) {
+bg_points <- pblapply(tidx, function(t) {
   nsamps <- 50
   preds <- rast(lapply(seq_along(bioclims), function(i,...) bioclims[[i]][[t]]))
   names(preds) <- sapply(strsplit(names(preds), "_"), "[", 1)
@@ -298,8 +302,32 @@ bg_points <- lapply(tidx, function(t) {
 # collate the sample and round
 bg_points <- data.table::rbindlist(bg_points)
 cols <- names(bg_points)
-bg_points[,(cols) := round(.SD, 3), .SDcols = cols]
+bg_points[,(cols) := round(.SD, 2), .SDcols = cols]
 ```
+```{r extractBG_run, echo = FALSE, eval = TRUE}
+# which timesteps from the TraCE-Sahul data are included in our fossil matched data
+tidx <- which(terra::time(bioclims$bio01) %in% foss_matched_bioclim$Year)
+
+# extract bg points.
+## seed is set for reproducability
+{set.seed(84564)
+  if (file.exists(file.path(bioclims_dir, "background_pts.csv"))) {
+    bg_points <- data.table::fread(file.path(bioclims_dir, "background_pts.csv"))
+  } else {
+  bg_points <- pblapply(tidx, function(t) {
+    nsamps <- 50
+    preds <- rast(lapply(seq_along(bioclims), function(i,...) bioclims[[i]][[t]]))
+    names(preds) <- sapply(strsplit(names(preds), "_"), "[", 1)
+    data.table::setDT(terra::spatSample(preds, nsamps, na.rm = TRUE))
+  })
+  # collate the sample and round
+  bg_points <- data.table::rbindlist(bg_points)
+  cols <- names(bg_points)
+  bg_points[,(cols) := round(.SD, 2), .SDcols = cols]
+  data.table::fwrite(bg_points, file.path(bioclims_dir, "background_pts.csv"))
+  }}
+```
+
 
 A quick looks shows what we generated for the first 5 variables
 
@@ -329,12 +357,12 @@ rf_dws <- randomForest(
   mtry = 5,
   data = training,
   ntree = 1000,
-  importance = TRUE,
+  importance = FALSE,
   sampsize = spsize,
   replace = TRUE)
 ```
 
-We can see that the random forest model was moderatly accurate using the misclassification matrix
+We can see that the random forest model was moderately accurate using the misclassification matrix
 
 ```{r rfSummary, echo=FALSE}
 rf_dws

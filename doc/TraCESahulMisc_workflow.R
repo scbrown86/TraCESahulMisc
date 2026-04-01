@@ -8,6 +8,7 @@ knitr::opts_chunk$set(
 library(TraCESahulMisc)
 library(terra)
 library(randomForest)
+library(pbapply)
 
 # only for plotting
 library(rnaturalearth)
@@ -15,18 +16,38 @@ conts <- vect(rnaturalearth::ne_coastline(scale = 50))
 conts <- crop(conts, ext(125, 135, -13, -8))
 
 ## ----downloadData-------------------------------------------------------------
-base_dir <- "D:/TraCE-Sahul"
-# download_trace_data(base_dir) # Run once only
+dl_dir <- "~/Documents" # download path for example data
+base_dir <- normalizePath(paste0(dl_dir,"/TraCE-Sahul")) # base dir to example data
+# download_trace_data(dl_dir) # Run once only
 
 ## ----importData---------------------------------------------------------------
 vars <- c("pr", "tasmax", "tasmin")
 
+# function to read in the data for each variable
 load_tracesahul <- function(base, var) {
-  f1 <- file.path(base, var,
-                  sprintf("TraCE_22ka_downscaled_%s_decadal_21k_1500CE_biascorr.nc", var))
-  f2 <- file.path(base, var,
-                  sprintf("TraCE_22ka_downscaled_%s_1500_1990_biascorr.nc", var))
-  import_TraCESahul(c(f1, f2))
+  d <- file.path(base, var)
+  pat_dec <- sprintf(
+    "TraCE-Sahul_decadal_22k_1500CE_%s_0[1-6]\\.nc$", var)
+  f_dec <- list.files(d, pattern = pat_dec, full.names = TRUE)
+  if (length(f_dec) == 0L) {
+    stop("No valid decadal chunk files (01–06) found for ", var)
+  }
+  idx <- sub(
+    sprintf(".*TraCE-Sahul_decadal_22k_1500CE_%s_(\\d{2})\\.nc$", var),
+    "\\1", basename(f_dec))
+  idx_int <- as.integer(idx)
+  if (!all(idx_int %in% 1:6)) {
+    stop("Invalid decadal chunk numbering found for ", var,". Only 01–06 are allowed.")
+  }
+  if (length(idx_int) != 6L) {
+    stop("Expected six decadal chunk files (01–06) for ", var, ", but found ", length(idx_int), ".")
+  }
+  f_dec <- f_dec[order(idx_int)]
+  f_1500 <- file.path(d, sprintf("TraCE-Sahul_annual_1500_1990_%s.nc", var))
+  if (!file.exists(f_1500)) {
+    stop("1500_1990 file not found for ", var)
+  }
+  import_TraCESahul(files = c(f_dec, f_1500), aoi = NULL)
 }
 sahul <- lapply(vars, function(v) load_tracesahul(base_dir, v))
 names(sahul) <- vars
@@ -46,42 +67,44 @@ names(tasmax_monthly_win) <- paste0(lyr_names, "_tasmax")
 names(tasmin_monthly_win) <- paste0(lyr_names, "_tasmin")
 
 ## ----bioclim, eval = FALSE, echo=TRUE-----------------------------------------
+# bioclims_dir <- "~/Desktop/TraCE-Sahul_bioclim"
+# 
 # bioclims <- bioclim_TraCESahul(
 #   tasmax = tasmax_monthly_win,
 #   tasmin = tasmin_monthly_win,
 #   pr = pr_monthly_win,
-#   # store in a folder in basedir. Not recommended
-#   outdir = paste0(base_dir,"/bioclims"),
-#   bioclims = c(1, 4, 5, 6, 7, 12, 13, 14, 17, 18), # default is to use 1:19
+#   outdir = bioclims_dir,
+#   # default is to use bioclims 1:19
+#   bioclims = c(1, 4, 5, 6, 7, 12, 13, 14, 17, 18),
 #   collate = TRUE)
 # bioclims
 
 ## ----bioClimLoad, echo = FALSE, eval = TRUE-----------------------------------
+bioclims_dir <- "~/Desktop/TraCE-Sahul_bioclim"
 # This section will run the bioclim extraction only if the output sds doesnt already exist
-if (!file.exists(file.path(paste0(base_dir,"/bioclims"), "bioclims_TraCESahul.RDS"))) {
+if (!file.exists(file.path(bioclims_dir, "bioclims_TraCESahul.RDS"))) {
   bioclims <- bioclim_TraCESahul(
   tasmax = tasmax_monthly_win,
   tasmin = tasmin_monthly_win,
   pr = pr_monthly_win,
-  # store in a folder in basedir. Not recommended
-  outdir = paste0(base_dir,"/bioclims"),
-  bioclims = c(1, 4, 5, 6, 7, 12, 13, 14, 17, 18), # default is to use 1:19
+  outdir = bioclims_dir,
+  bioclims = c(1, 4, 5, 6, 7, 12, 13, 14, 17, 18),
   collate = TRUE)
 } else {
-  bioclims <- terra::unwrap(readRDS(file.path(paste0(base_dir,"/bioclims"), "bioclims_TraCESahul.RDS")))
+  bioclims <- terra::unwrap(readRDS(file.path(bioclims_dir, "bioclims_TraCESahul.RDS")))
 }
+bioclims
 
 ## ----plotBio, echo=FALSE,fig.align='center',fig.dpi=320, fig.height=8, fig.width=9, out.width = "100%"----
 n <- nlyr(bioclims$bio01)
 panel(bioclims$bio01[[round(quantile(1:n, probs = seq(0, 1, length.out = 6)))]],
-      fill_range = TRUE, range = c(10, 30),
+      fill_range = TRUE, range = c(16, 28),
       col = map.pal("bgyr", n = 100),
       fun = function() lines(conts, lwd = 1, col  ="#000000"),
       box = TRUE,
       background = "grey90",
       nc = 2,
       plg = list(
-        legend = "Suitability",
         title = "BIO01 (°C)",
         title.x = 136.75,
         title.y = -10.7,
@@ -90,7 +113,7 @@ panel(bioclims$bio01[[round(quantile(1:n, probs = seq(0, 1, length.out = 6)))]],
         digits = 0,
         bty = "n",
         size = c(1, 1),
-        at = seq(10, 30, l = 5),
+        at = seq(16, 28, l = 7),
         tick = "through"
       ),
       pax = list(
@@ -102,7 +125,7 @@ panel(bioclims$bio01[[round(quantile(1:n, probs = seq(0, 1, length.out = 6)))]],
 ## -----------------------------------------------------------------------------
 # make a mask using bio01
 mask_ras <- bioclims$bio01
-mask_ras <- ifel(is.na(mask_ras), NA, 1)
+mask_ras <- ifel(is.na(mask_ras), 0, 1)
 
 ## ----exFoss-------------------------------------------------------------------
 data(ex_foss)
@@ -129,32 +152,56 @@ foss_matched_bioclim <- pair_obs(
   ras_time = terra::time(bioclims$bio01),
   window = 30, # 30-year window
   neigh = 8, # 8-neighbours (rook)
-  prec = 3, # 3 decimal places
+  prec = 2, # 2 decimal places
   summ_stat = "mean",
   dist_cut = 50, # km
   # parallel is disabled and will be set to 1 if any other value is given
   cores = 1L, 
   buff_width = NULL
 )
+foss_matched_bioclim
 
-## ----extractBG----------------------------------------------------------------
+## ----extractBG, eval = FALSE, echo = TRUE-------------------------------------
+# # which timesteps from the TraCE-Sahul data are included in our fossil matched data
+# tidx <- which(terra::time(bioclims$bio01) %in% foss_matched_bioclim$Year)
+# 
+# # extract bg points.
+# ## seed is set for reproducability
+# {set.seed(84564)
+# bg_points <- pblapply(tidx, function(t) {
+#   nsamps <- 50
+#   preds <- rast(lapply(seq_along(bioclims), function(i,...) bioclims[[i]][[t]]))
+#   names(preds) <- sapply(strsplit(names(preds), "_"), "[", 1)
+#   data.table::setDT(terra::spatSample(preds, nsamps, na.rm = TRUE))
+# })}
+# 
+# # collate the sample and round
+# bg_points <- data.table::rbindlist(bg_points)
+# cols <- names(bg_points)
+# bg_points[,(cols) := round(.SD, 2), .SDcols = cols]
+
+## ----extractBG_run, echo = FALSE, eval = TRUE---------------------------------
 # which timesteps from the TraCE-Sahul data are included in our fossil matched data
 tidx <- which(terra::time(bioclims$bio01) %in% foss_matched_bioclim$Year)
 
 # extract bg points.
 ## seed is set for reproducability
 {set.seed(84564)
-bg_points <- lapply(tidx, function(t) {
-  nsamps <- 50
-  preds <- rast(lapply(seq_along(bioclims), function(i,...) bioclims[[i]][[t]]))
-  names(preds) <- sapply(strsplit(names(preds), "_"), "[", 1)
-  data.table::setDT(terra::spatSample(preds, nsamps, na.rm = TRUE))
-})}
-
-# collate the sample and round
-bg_points <- data.table::rbindlist(bg_points)
-cols <- names(bg_points)
-bg_points[,(cols) := round(.SD, 3), .SDcols = cols]
+  if (file.exists(file.path(bioclims_dir, "background_pts.csv"))) {
+    bg_points <- data.table::fread(file.path(bioclims_dir, "background_pts.csv"))
+  } else {
+  bg_points <- pblapply(tidx, function(t) {
+    nsamps <- 50
+    preds <- rast(lapply(seq_along(bioclims), function(i,...) bioclims[[i]][[t]]))
+    names(preds) <- sapply(strsplit(names(preds), "_"), "[", 1)
+    data.table::setDT(terra::spatSample(preds, nsamps, na.rm = TRUE))
+  })
+  # collate the sample and round
+  bg_points <- data.table::rbindlist(bg_points)
+  cols <- names(bg_points)
+  bg_points[,(cols) := round(.SD, 2), .SDcols = cols]
+  data.table::fwrite(bg_points, file.path(bioclims_dir, "background_pts.csv"))
+  }}
 
 ## ----quickBG_look, echo = FALSE-----------------------------------------------
 head(bg_points[,1:5])
@@ -175,7 +222,7 @@ rf_dws <- randomForest(
   mtry = 5,
   data = training,
   ntree = 1000,
-  importance = TRUE,
+  importance = FALSE,
   sampsize = spsize,
   replace = TRUE)
 

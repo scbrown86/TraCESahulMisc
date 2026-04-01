@@ -6,9 +6,10 @@
 #' age range. Temporal matching uses either exact time slices or right-aligned
 #' averaging windows (when \code{window} is supplied). Spatial extraction can
 #' use either a fixed-radius buffer or a nearest-neighbour search. The function
-#' supports parallel processing via \pkg{\link{pbapply}} and \pkg{\link{future}}
-#' and returns a long-format \code{\link[data.table:data.table]{data.table}}
-#' containing extracted values for all environmental rasters and mask layers.
+#' supports parallel processing via \pkg{\link[pbapply]{pbapply}} and
+#' \pkg{\link[future]{future}} and returns a long-format
+#' \code{\link[data.table:data.table]{data.table}} containing extracted values
+#' for all environmental rasters and mask layers.
 #'
 #' @details
 #' The input \code{data} must contain the columns \code{ID}, \code{Lat},
@@ -19,12 +20,16 @@
 #' right-aligned averaging windows of length \code{window} years
 #' (\code{window >= 10}).
 #'
+#' The current function has a hard-coded internal projection to a Lambert Equal-Area
+#' projection suitable for Sahul. Future versions may remove this, and have this as
+#' a user-defined argument.
+#'
 #' Spatial extraction is performed using either:
-#' \itemize{
-#'   \item{\strong{Buffer-based extraction}}{ if \code{buff_width} is supplied;
+#' \describe{
+#'   \item{\strong{Buffer-based extraction}}{if \code{buff_width} is supplied;
 #'   extraction is performed within a circular buffer of \code{buff_width}
 #'   kilometres around the point.}
-#'   \item{\strong{Neighbour extraction}}{ if \code{neigh} is supplied; the
+#'   \item{\strong{Neighbour extraction}}{if \code{neigh} is supplied; the
 #'   \code{neigh} nearest raster cells are identified (4 or 8 neighbours).}
 #' }
 #'
@@ -48,7 +53,7 @@
 #' containing environmental variables. All rasters must be aligned, have identical
 #' geometry, and share the same temporal dimension.
 #' @param mask_layer A \code{SpatRaster} containing categorical mask layers
-#' (for example land–sea masks). Must have the same number of layers and geometry
+#' (for example land-sea masks). Must have the same number of layers and geometry
 #' as each element of \code{ras_list}.
 #' @param ras_time A numeric vector giving the times or time-step labels for each
 #' raster layer. Length must equal the number of layers in each raster.
@@ -69,20 +74,19 @@
 #' are removed from the output.
 #' @param cores Integer. Number of CPU cores to use for parallel extraction.
 #' If \code{cores = 1L}, processing is sequential. CURRENTLY DISABLED. n_cores is
-#' checked as set back to 1L.
+#' checked and set back to 1L.
 #' @param ... Additional arguments passed to internal methods.
 #'
 #' @return
-#' A \code{data.table} where each row corresponds to one ID–Year combination.
+#' A \code{data.table} where each row corresponds to one ID-Year combination.
 #' Columns include:
-#' \itemize{
-#'   \item{\code{ID}}{ Record identifier.}
-#'   \item{\code{Lon}, \code{Lat}}{ Final coordinates used after optional snapping.}
-#'   \item{\code{Year}}{ Temporal index matched to the fossil’s age range.}
-#'   \item{Environmental variables}{ One column per raster in \code{ras_list}.}
-#'   \item{\code{LandSea}}{ Modal value from \code{mask_layer}.}
+#' \describe{
+#'   \item{\code{ID}}{Record identifier.}
+#'   \item{\code{Lon}, \code{Lat}}{Final coordinates used after optional snapping.}
+#'   \item{\code{Year}}{Temporal index matched to the fossil's age range.}
+#'   \item{Environmental variables}{One column per raster in \code{ras_list}.}
+#'   \item{\code{LandSea}}{Modal value from \code{mask_layer}.}
 #' }
-#'
 #' Returned values are rounded to \code{prec} decimal places and duplicates are
 #' removed.
 #'
@@ -117,7 +121,8 @@
 #' }
 #'
 #' @seealso
-#' \code{\link{terra}}, \code{\link{future}}, \code{\link{pbapply}}
+#' \code{\link[terra]{terra}}, \code{\link[future]{future}},
+#' \code{\link[pbapply]{pbapply}}
 #'
 #' @export
 #'
@@ -313,7 +318,7 @@ parallel_env_match <- function(data, ras_list, mask_layer, ras_time, window,
           ml <- mask_layer
         }
         # Fossil point
-        coords <- terra::vect(sub, geom = c("Lon", "Lat"), crs = "EPSG:4326")
+        coords <- terra::vect(sub, geom = c("Lon", "Lat"), crs = terra::crs(template_rast))
         # Optional snapping
         if (!is.null(dist_cut)) {
           coords_proj <- terra::project(coords, y = wkt_proj)
@@ -327,7 +332,7 @@ parallel_env_match <- function(data, ras_list, mask_layer, ras_time, window,
               sf::st_as_sf(ras_points[snap_idx$to_id, ])
             )
             coords <- terra::vect(coords_sf)
-            coords <- terra::project(coords, y = "EPSG:4326")
+            coords <- terra::project(coords, y = terra::crs(template_rast))
           } else {
             return(NULL)
           }
@@ -336,7 +341,7 @@ parallel_env_match <- function(data, ras_list, mask_layer, ras_time, window,
         if (!is.null(buff_width)) {
           coords_proj <- terra::project(coords, y = wkt_proj)
           nei <- terra::buffer(coords_proj, width = buff_width * 1000)
-          nei <- terra::project(nei, "EPSG:4326")
+          nei <- terra::project(nei, terra::crs(template_rast))
           nr <- FALSE
         } else if (!is.null(neigh)) {
           ras_points <- terra::as.points(template_rast, values = FALSE, na.rm = TRUE)

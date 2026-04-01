@@ -1,7 +1,7 @@
 Package: TraCESahulMisc
 Type: Package
 Title: TraCE-Sahul_misc
-Version: 0.1.0
+Version: 0.5.0
 Authors@R: c(
     person(
       "Stuart", "Brown",
@@ -24,12 +24,14 @@ Imports:
     fastbioclim,
     FNN,
     future,
-    future.apply,
     pbapply,
     sf,
     terra (>= 1.8-50),
     utils
 Suggests: 
     knitr,
-    rmarkdown
+    randomForest,
+    rmarkdown,
+    rnaturalearth,
+    rnaturalearthdata
 VignetteBuilder: knitr
