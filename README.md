@@ -9,21 +9,17 @@ The package was designed specifically for researchers working with the TraCE-Sah
 
 ## Installation
 
-This package is currently in a **private** GitHub repository. You must be a collaborator to install it directly.
+The easiest way to install the package is to use `remotes` or `devtools` as below
 
 ``` r
-library(credentials)
-library(remotes)
-library(usethis)
-
-usethis::use_git_config(user.name = "YourName", user.email = "your@mail.com")
-usethis::create_github_token()
-credentials::set_github_pat()
-
-remotes::install_github("scbrown86/TraCESahulMisc")
+remotes::install_github("scbrown86/TraCESahulMisc", build_vignettes = FALSE)
 ```
 
 Alternatively, clone the repository using GitHub Desktop or CLI and build the package locally in [RStudio](https://support.posit.co/hc/en-us/articles/200486508-Building-Testing-and-Distributing-Packages).
+
+## Vignette
+
+The package constains a small vignette showing some of the functionality. It can be found [here](https://scbrown.github.io/TraCESahulMisc/TraCESahulMisc_workflow.html)
 
 ## Key Features
 
