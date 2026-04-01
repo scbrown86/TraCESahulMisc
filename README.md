@@ -19,7 +19,7 @@ Alternatively, clone the repository using GitHub Desktop or CLI and build the pa
 
 ## Vignette
 
-The package constains a small vignette showing some of the functionality. It can be found [here](https://scbrown86.github.io/TraCESahulMisc/docs/TraCESahulMisc_workflow.html)
+The package constains a small vignette showing some of the functionality. It can be found [here](https://scbrown86.github.io/TraCESahulMisc/TraCESahulMisc_workflow.html)
 
 ## Key Features
 
