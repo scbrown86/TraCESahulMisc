@@ -21,7 +21,7 @@ The package contains a pre-built vignette that *should* not be re-built on insta
 
 The package constains a small vignette showing some of the functionality. 
 
-It can be found oneline [here](https://scbrown86.github.io/TraCESahulMisc/TraCESahulMisc_workflow.html), or can be viewed in RStudio as below
+It can be viewed [here](https://scbrown86.github.io/TraCESahulMisc/TraCESahulMisc_workflow.html), or in RStudio as below
 
 ```r
 vignette("TraCESahulMisc_workflow")
