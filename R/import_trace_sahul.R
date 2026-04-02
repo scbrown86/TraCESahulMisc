@@ -81,6 +81,10 @@ classify_TraCESahul <- function(files) {
 #' filepaths must be given in order (e.g. 01.nc, 02.nc, 03.nc, 04.nc, 05.nc, 06.nc),
 #' with the monthly data from 1500 to 1989 provided last
 #'
+#' The file can be read in directly with \code{terra::rast}, but note that due to the way
+#' \pkg{terra} handles the time index the dates will appear incorrect.
+#' See Example 5 using the test dataset below.
+#'
 #' @import data.table
 #' @importFrom terra rast time depth depthName depthUnit
 #' @importFrom pbapply pblapply
@@ -145,6 +149,20 @@ classify_TraCESahul <- function(files) {
 #' sahul_monthly <- lapply(vars, function(v) load_monthly(base_dir, v))
 #' names(sahul_monthly) <- vars
 #' sahul_monthly
+#'
+#' # Example 5: Read in directly with terra
+#' pr_sahul <- terra::rast("~/Documents/TraCE-Sahul/pr/TraCE-Sahul_annual_1500_1990_pr.nc")
+#' pr_sahul
+#' # class       : SpatRaster
+#' # size        : 100, 200, 5880  (nrow, ncol, nlyr)
+#' # resolution  : 0.05, 0.05  (x, y)
+#' # extent      : 125, 135, -13, -8  (xmin, xmax, ymin, ymax)
+#' # coord. ref. : lon/lat WGS 84 (CRS84) (OGC:CRS84)
+#' # source      : TraCE-Sahul_annual_1500_1990_pr.nc
+#' # varname     : pr (Precipitation)
+#' # names       :     pr_1,     pr_2,     pr_3,     pr_4,     pr_5,     pr_6,      ...
+#' # unit        : mm/month
+#' # time (ymnts): 1970-Jan to 2459-Dec (5880 steps)
 #' }
 #' @export
 #'
