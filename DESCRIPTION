@@ -1,6 +1,6 @@
 Package: TraCESahulMisc
 Type: Package
-Title: TraCE-Sahul_misc
+Title: TraCESahulMisc
 Version: 0.5.0
 Authors@R: c(
     person(
