@@ -20,10 +20,6 @@
 #' right-aligned averaging windows of length \code{window} years
 #' (\code{window >= 10}).
 #'
-#' The current function has a hard-coded internal projection to a Lambert Equal-Area
-#' projection suitable for Sahul. Future versions may remove this, and have this as
-#' a user-defined argument.
-#'
 #' Spatial extraction is performed using either:
 #' \describe{
 #'   \item{\strong{Buffer-based extraction}}{if \code{buff_width} is supplied;
@@ -75,6 +71,10 @@
 #' @param cores Integer. Number of CPU cores to use for parallel extraction.
 #' If \code{cores = 1L}, processing is sequential. CURRENTLY DISABLED. n_cores is
 #' checked and set back to 1L.
+#' @param wkt_proj Optional character. a [WKT string](https://en.wikipedia.org/wiki/Well-known_text_representation_of_coordinate_reference_systems)
+#' defining a suitable projection to use when matching observations to the
+#' raster data. If \code{NULL} (Default) uses a WKT suitable for the
+#' Sahul region.
 #' @param ... Additional arguments passed to internal methods.
 #'
 #' @return
@@ -128,7 +128,7 @@
 #'
 pair_obs <- function(data, ras_list, mask_layer, ras_time, buff_width = NULL,
                      window = NULL, neigh = 8, prec = 2, summ_stat = "mean",
-                     dist_cut = NULL, cores = 4L, ...) {
+                     dist_cut = NULL, cores = 4L, wkt_proj = NULL,...) {
   # Required argument checks
   if (missing(data) || is.null(data)) {
     stop("'data' must be provided and must not be NULL.")
@@ -209,6 +209,24 @@ pair_obs <- function(data, ras_list, mask_layer, ras_time, buff_width = NULL,
   # check raster geometry consistency
   stopifnot(check_geom(ras_list))
   stopifnot(terra::compareGeom(ras_list[[1]], mask_layer))
+  # make sure wkt_proj is defined and valid
+  if (is.null(wkt_proj)) {
+    wkt_proj <- 'PROJCS["Sahul_Lambert_Azimuthal",
+  GEOGCS["GCS_WGS_1984",
+  DATUM["D_WGS_1984",
+  SPHEROID["WGS_1984",6378137.0,298.257223563]],
+  PRIMEM["Greenwich",0.0],
+  UNIT["Degree",0.0174532925199433]],
+  PROJECTION["Lambert_Azimuthal_Equal_Area"],
+  PARAMETER["False_Easting",0.0],
+  PARAMETER["False_Northing",0.0],
+  PARAMETER["Central_Meridian",135],
+  PARAMETER["Latitude_Of_Origin",-20],
+  UNIT["Meter",1.0]]'
+  }
+  if (inherits(try(terra::crs(wkt_proj), silent = TRUE), "try-error")) {
+    stop("'wkt_proj' is not a valid WKT projection.")
+  }
   # Apply the time to all the rasters
   ras_list <- lapply(ras_list, function(x) {
     terra::time(x) <- ras_time
@@ -233,18 +251,6 @@ pair_obs <- function(data, ras_list, mask_layer, ras_time, buff_width = NULL,
   } else {
     message("Extracting data from rasters sequentially")
   }
-  wkt_proj <- 'PROJCS["Sahul_Lambert_Azimuthal",
-  GEOGCS["GCS_WGS_1984",
-  DATUM["D_WGS_1984",
-  SPHEROID["WGS_1984",6378137.0,298.257223563]],
-  PRIMEM["Greenwich",0.0],
-  UNIT["Degree",0.0174532925199433]],
-  PROJECTION["Lambert_Azimuthal_Equal_Area"],
-  PARAMETER["False_Easting",0.0],
-  PARAMETER["False_Northing",0.0],
-  PARAMETER["Central_Meridian",135],
-  PARAMETER["Latitude_Of_Origin",-20],
-  UNIT["Meter",1.0]]'
   env_pairing <- parallel_env_match(
     data = data,
     ras_list = ras_list,

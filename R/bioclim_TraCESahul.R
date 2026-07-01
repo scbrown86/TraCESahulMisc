@@ -60,8 +60,7 @@
 #'
 #' @export
 #'
-#' @importFrom terra rast tapp time depth names nlyr depthName depthUnit units
-#' varnames sds saveRDS values
+#' @importFrom terra rast tapp time depth names nlyr depthName depthUnit units varnames sds saveRDS values
 #' @importFrom pbapply pblapply
 #' @importFrom fastbioclim derive_bioclim
 #'
@@ -210,7 +209,7 @@ extract_bio <- function(b, bio_list, uyears) {
     pos <- which(names(x) == sprintf("bio%02d", b))
     x[[pos]]
   })
-  out <- terra::rast(layers)
+  out <- terra::rast(layers, md = FALSE)
   terra::varnames(out) <- sprintf("bio%02d", b)
   names(out) <- paste0(sprintf("bio%02d", b), "_", uyears)
   out

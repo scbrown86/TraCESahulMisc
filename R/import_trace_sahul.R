@@ -186,7 +186,7 @@ import_TraCESahul <- function(files, aoi = NULL) {
   get_monthly_years <- function() rep(1500:1989, each = 12)
   handle_decadal_core <- function(f, aoi) {
     data <- load_timestep_table()
-    ds   <- terra::rast(f, win = aoi)
+    ds   <- terra::rast(f, win = aoi, md = FALSE)
     terra::crs(ds) <- "EPSG:4326"
     ds   <- set_monthly_metadata(ds, data[["YearsCE"]])
     assign("TraCESahul_time_steps", data, envir = .GlobalEnv)
@@ -198,13 +198,13 @@ import_TraCESahul <- function(files, aoi = NULL) {
     if (!is.na(chunk)) {
       data <- data.table::copy(data)[data$file_step == chunk, ]
     }
-    ds <- terra::rast(f, win = aoi)
+    ds <- terra::rast(f, win = aoi, md = FALSE)
     ds <- set_monthly_metadata(ds, data[["YearsCE"]])
     assign("TraCESahul_time_steps", data, envir = .GlobalEnv)
     ds
   }
   handle_monthly_only <- function(f, aoi) {
-    ds <- terra::rast(f, win = aoi)
+    ds <- terra::rast(f, win = aoi, md = FALSE)
     set_monthly_metadata(ds, get_monthly_years())
   }
   handle_two_sets <- function(f_decadal, f_monthly,aoi) {
@@ -215,8 +215,10 @@ import_TraCESahul <- function(files, aoi = NULL) {
     } else if (!is.na(chunk)) {
       data <- data.table::copy(data)[data$file_step == chunk, ]
     }
-    ds1  <- set_monthly_metadata(terra::rast(f_decadal, win = aoi), data$YearsCE)
-    ds2  <- set_monthly_metadata(terra::rast(f_monthly, win = aoi), get_monthly_years())
+    ds1  <- set_monthly_metadata(terra::rast(f_decadal, win = aoi, md = FALSE),
+                                 data$YearsCE)
+    ds2  <- set_monthly_metadata(terra::rast(f_monthly, win = aoi, md = FALSE),
+                                 get_monthly_years())
     assign("TraCESahul_time_steps", data, envir = .GlobalEnv)
     c(ds1, ds2)
   }

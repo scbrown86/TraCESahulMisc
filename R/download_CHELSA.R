@@ -96,7 +96,7 @@ download_CHELSA <- function(x, var, dir, template,
     terra::buffer(
       terra::vect(terra::ext(template), crs = terra::crs(template)),
       width = 50 * 1000))
-  r <- terra::rast(src, win = dl_ext)
+  r <- terra::rast(src, win = dl_ext, md = FALSE)
   out_file <- file.path(out_dir, paste0(terra::names(r), ".tif"))
   if (!isTRUE(redo) && file.exists(out_file)) {
     return(out_file)

@@ -16,6 +16,7 @@ pair_obs(
   summ_stat = "mean",
   dist_cut = NULL,
   cores = 4L,
+  wkt_proj = NULL,
   ...
 )
 }
@@ -60,6 +61,11 @@ are removed from the output.}
 If \code{cores = 1L}, processing is sequential. CURRENTLY DISABLED. n_cores is
 checked and set back to 1L.}
 
+\item{wkt_proj}{Optional character. a [WKT string](https://en.wikipedia.org/wiki/Well-known_text_representation_of_coordinate_reference_systems)
+defining a suitable projection to use when matching observations to the
+raster data. If \code{NULL} (Default) uses a WKT suitable for the
+Sahul region.}
+
 \item{...}{Additional arguments passed to internal methods.}
 }
 \value{
@@ -94,10 +100,6 @@ represents the youngest bound of the calibrated confidence interval, and
 times \code{ras_time}, either as exact years (\code{window = NULL}) or as
 right-aligned averaging windows of length \code{window} years
 (\code{window >= 10}).
-
-The current function has a hard-coded internal projection to a Lambert Equal-Area
-projection suitable for Sahul. Future versions may remove this, and have this as
-a user-defined argument.
 
 Spatial extraction is performed using either:
 \describe{
