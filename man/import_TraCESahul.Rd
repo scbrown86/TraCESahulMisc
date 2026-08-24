@@ -4,7 +4,7 @@
 \alias{import_TraCESahul}
 \title{Imports the TraCE-Sahul dataset}
 \usage{
-import_TraCESahul(files, aoi = NULL)
+import_TraCESahul(files, aoi = NULL, CMIP6 = FALSE)
 }
 \arguments{
 \item{files}{A character vector of filepaths pointing to the
@@ -14,21 +14,30 @@ import_TraCESahul(files, aoi = NULL)
 (\code{c(xmin,xmax,ymin,ymax)}) passed to \code{\link[terra]{rast}} to
 spatially subset the \emph{TraCE-Sahul} data. Default = \code{NULL} which will
 return the entire spatial domain.}
+
+\item{CMIP6}{logical. If \code{TRUE}, \code{files} is treated as CMIP6
+ensemble mean data (e.g. \code{TraCE-Sahul_ssp585_2015_2100_tasmin.nc}) rather
+than \emph{TraCE-Sahul} data. Either one file, or two files representing the
+\code{historical} scenario followed by a single future scenario, may be
+supplied. Default = \code{FALSE}.}
 }
 \value{
 A \emph{SpatRaster} with updated \code{\link[terra]{time}} index
 showing the relevant year, and \code{\link[terra]{depth}} representing the month
 
-A \emph{data.table} in the \code{.GlobalEnv} named \code{TraCESahul_time_steps} with the relevant details for all timesteps for \code{files}
+A \emph{data.table} in the \code{.GlobalEnv} named \code{TraCESahul_time_steps}
+with the relevant details for all timesteps for \code{files} if the pre 1500
+data is loaded.
 }
 \description{
 This function returns a \code{\link[terra:rast]{SpatRast}} representing the
-full (or a subset) \emph{TraCE-Sahul} dataset. Internally the
-function reads a CSV of timesteps from \code{inst/extdata/TraCE-Sahul_timesteps.csv},
+full (or a subset) \emph{TraCE-Sahul} dataset. Internally, if the paleo data is opened
+the function reads a CSV of timesteps from \code{inst/extdata/TraCE-Sahul_timesteps.csv},
 and exports it to the \code{.GlobalEnv}. This data.table contains all the timesteps
 for every layer in the TraCE-Sahul dataset.
 
-If the monthly data from 1500-1989 is also provided, it will be appended.
+If the monthly data from 1500-1989 is also provided, it will be appended to
+the paleo (pre-1500 CE) data. The CMIP6 data cannot be appended using this function.
 }
 \details{
 The function will stop if \code{x} is not a file.path or series of file.paths.
@@ -43,8 +52,12 @@ The function will fail if the \emph{TraCE-Sahul} datasets have been renamed.
 filepaths must be given in order (e.g. 01.nc, 02.nc, 03.nc, 04.nc, 05.nc, 06.nc),
 with the monthly data from 1500 to 1989 provided last
 
-The file can be read in directly with \code{terra::rast}, but note that due to the way
-\pkg{terra} handles the time index the dates will appear incorrect.
+The \emph{TraCE-Sahul CMIP6} data has an overlapping time period with the
+\emph{TraCE-Sahul} historical data and as such \strong{cannot} be appended
+directly with this import function.
+
+The files can be read in directly with \code{terra::rast}, but note that due
+to the way \pkg{terra} handles the time index the dates will appear incorrect.
 See Example 5 using the test dataset below.
 }
 \examples{
@@ -109,5 +122,17 @@ pr_sahul
 # names       :     pr_1,     pr_2,     pr_3,     pr_4,     pr_5,     pr_6,      ...
 # unit        : mm/month
 # time (ymnts): 1970-Jan to 2459-Dec (5880 steps)
+
+# Example 6: CMIP6 historical + ssp585, all variables
+load_cmip6 <- function(base, var) {
+  f1 <- file.path(base, var,
+                  sprintf("TraCE-Sahul_historical_1900_2014_\%s.nc", var))
+  f2 <- file.path(base, var,
+                  sprintf("TraCE-Sahul_ssp585_2015_2100_\%s.nc", var))
+  import_TraCESahul(files = c(f1, f2), CMIP6 = TRUE)
+}
+sahul_cmip6 <- lapply(vars, function(v) load_cmip6(base_dir, v))
+names(sahul_cmip6) <- vars
+sahul_cmip6
 }
 }
