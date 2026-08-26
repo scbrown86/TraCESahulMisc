@@ -17,7 +17,8 @@ License: GPL (>= 3)
 Encoding: UTF-8
 LazyData: true
 Depends:
-    R (>= 4.4.0)
+    R (>= 4.4.0),
+    terra (>= 1.9.38)
 Imports: 
     data.table,
     fastbioclim,
@@ -25,7 +26,6 @@ Imports:
     future,
     pbapply,
     sf,
-    terra (>= 1.8-50),
     utils
 Suggests: 
     knitr,

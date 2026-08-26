@@ -27,28 +27,47 @@ decadal climatology and handled accordingly.}
 }
 \value{
 A SpatRaster summarised according to the chosen \code{type} and
-  \code{window}. Monthly outputs contain one layer per month for each
-  timezone (pre- and post-1500). Seasonal outputs contain one layer per
-  austral season for each timezone when \code{window = NULL}. Windowed
-  outputs contain one layer per window–season or window–month combination.
+\code{window}. Monthly outputs contain one layer per month for each
+period (pre- and post-1500). Seasonal outputs contain one layer per austral
+season for each period when \code{window = NULL}. Windowed outputs contain
+one layer per window-season, window-month, or window combination.
 }
 \description{
 Summarise an imported \emph{TraCESahul} SpatRaster to annual, monthly, or
 seasonal climatologies. Monthly and seasonal summaries can be taken across the
-full record or grouped into right-aligned windows of years. Windows are
-guaranteed not to mix data from before and after 1500 CE.
+full record or grouped into right-aligned windows of years.
+
+Windows are always right-aligned to the most recent data, with older,
+incomplete leading years dropped as necessary, regardless of whether the
+underlying data are annual (post-1500) or decadal (pre-1500).
+
+Windows are guaranteed not to mix data from before and after 1500 CE.
 
 Seasonal summaries follow austral seasons. December is treated as belonging to
 the following year/timestep to ensure correct DJF alignment, including when
 time steps are spaced irregularly or when windowed summaries are requested.
+A DJF window is only returned if it contains a complete December + January +
+February triple. Any DJF window that would otherwise need December data from
+before the record began, or from across the 1500 CE boundary, is dropped in
+its entirety. This necessarily always removes the earliest DJF window from
+each time period (pre-, post-1500).
 }
 \details{
-Windows are constructed using right-aligned year ranges so the final window
-ends on the latest year in the data. Pre- and post-1500 periods are always
-windowed separately. For seasonal summaries, December is shifted into the
-following year before window assignment to preserve correct DJF grouping.
-When \code{window = 10}, pre-1500 data are already decadal climatologies and
-are treated accordingly when deriving annual, monthly, or seasonal outputs.
+Windows are constructed separately for the pre- and post-1500 periods, from
+whatever unique years are actually present, so they work correctly whether
+the underlying data are annual (post-1500) or decadal (pre-1500). Each zone
+keeps as many complete, right-aligned windows as its data allows. Remaining
+years at the older end that don't fill a complete window are dropped.
+
+For seasonal summaries, December is shifted into the following year before
+window assignment to preserve correct DJF grouping. December is only used
+if the following timestep sits in the same period; if not (or if there
+is no following timestep at all), that December cannot be paired with a
+Jan/Feb without crossing the decadal/annual boundary, so it's dropped rather
+than reassigned to the other period. After windows are assigned, any DJF window
+that doesn't contain equal counts of December, January, and February layers
+is dropped entirely, since a partial DJF window can only occur at the very
+start of a periods record.
 }
 \examples{
 \dontrun{

@@ -96,8 +96,8 @@ classify_cmip6 <- function(files) {
   if (n == 2 && scenarios[2] == "historical") {
     stop("When providing two CMIP6 files, the second must be a future scenario, not historical.")
   }
-  list(case = "cmip6", var = vars[1], n = n, scenario = scenarios,
-       start = starts, end = ends)
+  return(list(case = "cmip6", var = vars[1], n = n, scenario = scenarios,
+              start = starts, end = ends))
 }
 
 #' Imports the TraCE-Sahul dataset
@@ -244,15 +244,18 @@ import_TraCESahul <- function(files, aoi = NULL, CMIP6 = FALSE) {
     terra::time(ds) <- years
     terra::crs(ds) <- "EPSG:4326"
     attr(ds, "TraCESahul") <- TRUE
-    ds
+    return(ds)
   }
   load_timestep_table <- function() {
     path <- system.file("extdata", "TraCE-Sahul_timesteps.csv", package = "TraCESahulMisc")
     data.table::fread(path)
   }
   get_monthly_years <- function(CMIP6 = FALSE, start = NULL, end = NULL) {
-    if (!CMIP6) return(rep(1500:1989, each = 12))
-    rep(as.integer(start):as.integer(end), each = 12)
+    if (!CMIP6) {
+      return(rep(1500:1989, each = 12))
+    } else {
+      return(rep(as.integer(start):as.integer(end), each = 12))
+    }
   }
   handle_decadal_core <- function(f, aoi) {
     data <- load_timestep_table()
@@ -260,7 +263,7 @@ import_TraCESahul <- function(files, aoi = NULL, CMIP6 = FALSE) {
     terra::crs(ds) <- "EPSG:4326"
     ds   <- set_monthly_metadata(ds, data[["YearsCE"]])
     assign("TraCESahul_time_steps", data, envir = .GlobalEnv)
-    ds
+    return(ds)
   }
   handle_decadal_single <- function(f, aoi) {
     data <- load_timestep_table()
@@ -271,7 +274,7 @@ import_TraCESahul <- function(files, aoi = NULL, CMIP6 = FALSE) {
     ds <- terra::rast(f, win = aoi, md = FALSE)
     ds <- set_monthly_metadata(ds, data[["YearsCE"]])
     assign("TraCESahul_time_steps", data, envir = .GlobalEnv)
-    ds
+    return(ds)
   }
   handle_monthly_only <- function(f, aoi) {
     ds <- terra::rast(f, win = aoi, md = FALSE)
@@ -290,7 +293,7 @@ import_TraCESahul <- function(files, aoi = NULL, CMIP6 = FALSE) {
     ds2  <- set_monthly_metadata(terra::rast(f_monthly, win = aoi, md = FALSE),
                                  get_monthly_years())
     assign("TraCESahul_time_steps", data, envir = .GlobalEnv)
-    c(ds1, ds2)
+    return(c(ds1, ds2))
   }
   handle_cmip6 <- function(f, aoi, CMIP6) {
     ds_list <- lapply(seq_along(f), function(i) {

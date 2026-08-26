@@ -230,7 +230,7 @@ pair_obs <- function(data, ras_list, mask_layer, ras_time, buff_width = NULL,
   # Apply the time to all the rasters
   ras_list <- lapply(ras_list, function(x) {
     terra::time(x) <- ras_time
-    x
+    return(x)
   })
   # make sure the mask has time info
   terra::time(mask_layer) <- ras_time
@@ -244,7 +244,7 @@ pair_obs <- function(data, ras_list, mask_layer, ras_time, buff_width = NULL,
     message("All rasters must be wrapped before parallel extraction. Wrapping now.")
     ras_names <- names(ras_list)
     ras_list <- pbapply::pblapply(seq_along(ras_list), function(x) {
-      terra::wrap(ras_list[[x]])
+      return(terra::wrap(ras_list[[x]]))
     })
     names(ras_list) <- ras_names
     mask_layer <- terra::wrap(mask_layer)
@@ -274,14 +274,10 @@ pair_obs <- function(data, ras_list, mask_layer, ras_time, buff_width = NULL,
     } else {
       "no temporal match, > cutoff distance, or extraction error"
     }
-    warning(
-      sprintf("\nThere were %d samples removed (%s).", n_removed, reason),
-      immediate. = TRUE
-    )
-    warning(
-      sprintf("Samples removed: %s", paste(removed_ids, collapse = ", ")),
-      immediate. = TRUE
-    )
+    warning(sprintf("\nThere were %d samples removed (%s).", n_removed, reason),
+            immediate. = TRUE)
+    warning(sprintf("Samples removed: %s", paste(removed_ids, collapse = ", ")),
+            immediate. = TRUE)
   }
   # Round the extracted env variables
   cols <- names(env_pairing)[-c(1:4)] # exc ID, Lon, Lat, Year
@@ -335,8 +331,7 @@ parallel_env_match <- function(data, ras_list, mask_layer, ras_time, window,
           if (snap_dist <= dist_cut) {
             coords_sf <- sf::st_as_sf(coords_proj)
             sf::st_geometry(coords_sf) <- sf::st_as_sfc(
-              sf::st_as_sf(ras_points[snap_idx$to_id, ])
-            )
+              sf::st_as_sf(ras_points[snap_idx$to_id, ]))
             coords <- terra::vect(coords_sf)
             coords <- terra::project(coords, y = terra::crs(template_rast))
           } else {
