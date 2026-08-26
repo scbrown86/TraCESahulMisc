@@ -209,7 +209,7 @@ extract_bio <- function(b, bio_list, uyears) {
     pos <- which(names(x) == sprintf("bio%02d", b))
     x[[pos]]
   })
-  out <- terra::rast(layers, md = FALSE)
+  out <- terra::rast(layers)
   terra::varnames(out) <- sprintf("bio%02d", b)
   names(out) <- paste0(sprintf("bio%02d", b), "_", uyears)
   out
