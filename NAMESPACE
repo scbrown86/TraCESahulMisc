@@ -8,46 +8,54 @@ export(pair_obs)
 export(summarise_TraCESahul)
 import(data.table)
 importFrom(FNN,get.knnx)
-importFrom(data.table,copy)
-importFrom(data.table,data.table)
-importFrom(data.table,merge.data.table)
-importFrom(data.table,rbindlist)
-importFrom(data.table,setcolorder)
+importFrom(data.table,
+  copy,
+  data.table,
+  merge.data.table,
+  rbindlist,
+  setcolorder
+)
 importFrom(fastbioclim,derive_bioclim)
-importFrom(future,multisession)
-importFrom(future,plan)
+importFrom(future,
+  multisession,
+  plan
+)
 importFrom(pbapply,pblapply)
-importFrom(sf,st_as_sf)
-importFrom(sf,st_as_sfc)
-importFrom(sf,st_geometry)
+importFrom(sf,
+  st_as_sf,
+  st_as_sfc,
+  st_geometry
+)
 importFrom(stats,median)
-importFrom(terra,as.points)
-importFrom(terra,buffer)
-importFrom(terra,cellFromXY)
-importFrom(terra,crds)
-importFrom(terra,crs)
-importFrom(terra,depth)
-importFrom(terra,depthName)
-importFrom(terra,depthUnit)
-importFrom(terra,distance)
-importFrom(terra,ext)
-importFrom(terra,extract)
-importFrom(terra,names)
-importFrom(terra,nearest)
-importFrom(terra,nlyr)
-importFrom(terra,project)
-importFrom(terra,rast)
-importFrom(terra,resample)
-importFrom(terra,saveRDS)
-importFrom(terra,sds)
-importFrom(terra,setValues)
-importFrom(terra,tapp)
-importFrom(terra,time)
-importFrom(terra,units)
-importFrom(terra,unwrap)
-importFrom(terra,values)
-importFrom(terra,varnames)
-importFrom(terra,vect)
-importFrom(terra,writeRaster)
-importFrom(terra,xyFromCell)
+importFrom(terra,
+  as.points,
+  buffer,
+  cellFromXY,
+  crds,
+  crs,
+  depth,
+  depthName,
+  depthUnit,
+  distance,
+  ext,
+  extract,
+  names,
+  nearest,
+  nlyr,
+  project,
+  rast,
+  resample,
+  saveRDS,
+  sds,
+  setValues,
+  tapp,
+  time,
+  units,
+  unwrap,
+  values,
+  varnames,
+  vect,
+  writeRaster,
+  xyFromCell
+)
 importFrom(utils,tail)
