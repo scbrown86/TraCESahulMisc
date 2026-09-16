@@ -211,6 +211,8 @@ pair_obs <- function(data, ras_list, mask_layer, ras_time, buff_width = NULL,
   stopifnot(terra::compareGeom(ras_list[[1]], mask_layer))
   # make sure wkt_proj is defined and valid
   if (is.null(wkt_proj)) {
+  warning("No projection defined. Using a projection suitable for TraCE-Sahul",
+          immediate. = TRUE, call. = FALSE)
     wkt_proj <- 'PROJCS["Sahul_Lambert_Azimuthal",
   GEOGCS["GCS_WGS_1984",
   DATUM["D_WGS_1984",
@@ -404,7 +406,7 @@ parallel_env_match <- function(data, ras_list, mask_layer, ras_time, window,
                                weights = FALSE, na.rm = TRUE, raw = FALSE,
                                ID = FALSE))
             } else {
-              apply(terra::extract(ml[[ras_sub]], nei), 2, terra::modal, na.rm = TRUE)
+              apply(terra::extract(ml[[ras_sub]], nei), 2, Mode)
             }
           },
           error = function(e) e
@@ -420,7 +422,7 @@ parallel_env_match <- function(data, ras_list, mask_layer, ras_time, window,
             Year = as.vector(ras_time[ras_sub]),
             DT2  = as.vector(m_ext))
         }
-        colnames(m_ext)[3] <- "LandSea"
+        colnames(m_ext)[3] <- "Mask"
         ext[[length(ext) + 1L]] <- m_ext
         mergedDT <- Reduce(
           function(x, y)
@@ -530,4 +532,14 @@ get_time_indices <- function(ras_time, AgeMin, AgeMax, win = NULL) {
   } else {
     return(idx)
   }
+}
+
+#' @param x vector of values
+#'
+#' @returns vector
+#' @noRd
+#'
+Mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
 }
