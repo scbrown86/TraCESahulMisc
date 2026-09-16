@@ -432,7 +432,7 @@ parallel_env_match <- function(data, ras_list, mask_layer, ras_time, window,
         crds_xy <- terra::crds(coords)
         mergedDT[, Lon := crds_xy[, 1]]
         mergedDT[, Lat := crds_xy[, 2]]
-        neworder <- c("ID", "Lon", "Lat", "Year", names(ras_list), "LandSea")
+        neworder <- c("ID", "Lon", "Lat", "Year", names(ras_list), "Mask")
         data.table::setcolorder(mergedDT, neworder)
         return(mergedDT)
       },
