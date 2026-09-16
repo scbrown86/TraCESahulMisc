@@ -2,8 +2,6 @@
 
 **TraCESahulMisc** provides helper functions, workflows, and datasets for downloading, importing, processing, and analysing downscaled TraCE-Sahul palaeoclimate data in R. It supports a complete pipeline: acquiring (an example of) raw TraCE-Sahul files, importing them as `terra::SpatRaster` objects with correct metadata, generating monthly, seasonal, or annual summaries, deriving BIOCLIM variables, and pairing environmental rasters with fossil or observational point data.
 
-![downscaling comparison](overview_image.png)*TraCE-21ka model output at 3.75° resolution (left) and downscaled TraCE-Sahul data at 0.05° resolution (centre), both showing 1961–1990 conditions. The right panel shows downscaled CMIP6 data under SSP5-8.5 for 2100. The top row shows average annual temperature (°C), and the bottom row shows average daily precipitation (mm/day).*
-
 The package was designed specifically for researchers working with the TraCE-Sahul climate reconstructions, with the aim of automating the aggregation of palaeo-environmental data, and time-series environmental analyses across the Sahul region to be used in species distribution modelling.
 
 ## Installation
