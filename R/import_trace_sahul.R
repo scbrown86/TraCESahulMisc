@@ -100,6 +100,43 @@ classify_cmip6 <- function(files) {
               start = starts, end = ends))
 }
 
+#' Identify and validate variable positions in NetCDF files
+#'
+#' Identifies the subdataset index corresponding to a specified climate
+#' variable in each NetCDF file using `terra::describe()`. Stops if the
+#' variable is missing from any file or its position differs between files.
+#'
+#' @param x A character vector of file paths to NetCDF files.
+#' @param var A character vector of climate variable names to match.
+#'   Defaults to `"pr"`, `"tasmax"`, and `"tasmin"`.
+#'
+#' @return An integer giving the common subdataset index across all files.
+#'
+#' @keywords internal
+find_subds <- function(x, var = c("pr", "tasmax", "tasmin")) {
+  positions <- vapply(x, function(f) {
+    desc <- suppressWarnings(terra::describe(f))
+    subds <- grep("SUBDATASET_[0-9]+_NAME=", desc, value = TRUE)
+    idx <- as.integer(sub(".*SUBDATASET_([0-9]+)_NAME=.*", "\\1", subds))
+    names <- sub('.*:([^:"]+)"?$', "\\1", subds)
+    i <- which(names %in% var)
+    if (length(i) == 0) return(NA_integer_)
+    idx[i[1]]
+  }, integer(1))
+
+  if (anyNA(positions)) {
+    stop("No matching climate variable found in: ",
+         paste(x[is.na(positions)], collapse = ", "))
+  }
+
+  if (length(unique(positions)) != 1) {
+    stop("Climate variable subdataset positions differ between files: ",
+         paste(basename(x), positions, sep = " = ", collapse = "; "))
+  }
+
+  unname(positions[1])
+}
+
 #' Imports the TraCE-Sahul dataset
 #'
 #' @description
@@ -161,12 +198,10 @@ classify_cmip6 <- function(files) {
 #' base_dir <- "~/Documents/TraCE-Sahul"
 #' vars <- c("pr", "tasmax", "tasmin")
 #'
-#' # Example 1: full decadal data (no chunk) + annual, all variables
+#' # Example 1: Chunked decadal data + annual, all variables
 #' load_full <- function(base, var) {
-#'   f1 <- file.path(base, var,
-#'                   sprintf("TraCE-Sahul_decadal_22k_1500CE_%s.nc", var))
-#'   f2 <- file.path(base, var,
-#'                   sprintf("TraCE-Sahul_annual_1500_1990_%s.nc", var))
+#'   f1 <- file.path(base, var, sprintf("TraCE-Sahul_decadal_22k_1500CE_%s_%02d.nc", var, 1:6))
+#'   f2 <- file.path(base, var, sprintf("TraCE-Sahul_annual_1500_1990_%s.nc", var))
 #'   import_TraCESahul(files = c(f1, f2))
 #' }
 #' sahul_full <- lapply(vars, function(v) load_full(base_dir, v))
@@ -206,7 +241,8 @@ classify_cmip6 <- function(files) {
 #' sahul_monthly
 #'
 #' # Example 5: Read in directly with terra
-#' pr_sahul <- terra::rast("~/Documents/TraCE-Sahul/pr/TraCE-Sahul_annual_1500_1990_pr.nc")
+#' pr_sahul <- terra::rast("~/Documents/TraCE-Sahul/pr/TraCE-Sahul_annual_1500_1990_pr.nc",
+#'                         subds = "pr")
 #' pr_sahul
 #' # class       : SpatRaster
 #' # size        : 100, 200, 5880  (nrow, ncol, nlyr)
@@ -237,6 +273,7 @@ import_TraCESahul <- function(files, aoi = NULL, CMIP6 = FALSE) {
   if (!requireNamespace("terra", quietly = TRUE)) stop("Package 'terra' is required.")
   if (!requireNamespace("data.table", quietly = TRUE)) stop("Package 'data.table' is required.")
   out <- classify_TraCESahul(files, CMIP6)
+  var_pos <- suppressWarnings(find_subds(files))
   set_monthly_metadata <- function(ds, years) {
     terra::depth(ds) <- rep(1:12, times = terra::nlyr(ds) / 12)
     terra::depthName(ds) <- "Month"
@@ -257,30 +294,30 @@ import_TraCESahul <- function(files, aoi = NULL, CMIP6 = FALSE) {
       return(rep(as.integer(start):as.integer(end), each = 12))
     }
   }
-  handle_decadal_core <- function(f, aoi) {
+  handle_decadal_core <- function(f, aoi, vp = var_pos) {
     data <- load_timestep_table()
-    ds   <- terra::rast(f, win = aoi, md = FALSE)
+    ds   <- terra::rast(f, subds = vp, win = aoi, md = FALSE)
     terra::crs(ds) <- "EPSG:4326"
     ds   <- set_monthly_metadata(ds, data[["YearsCE"]])
     assign("TraCESahul_time_steps", data, envir = .GlobalEnv)
     return(ds)
   }
-  handle_decadal_single <- function(f, aoi) {
+  handle_decadal_single <- function(f, aoi, vp = var_pos) {
     data <- load_timestep_table()
     chunk <- unname(out$chunk_num)
     if (!is.na(chunk)) {
       data <- data.table::copy(data)[data$file_step == chunk, ]
     }
-    ds <- terra::rast(f, win = aoi, md = FALSE)
+    ds <- terra::rast(f, subds = vp, win = aoi, md = FALSE)
     ds <- set_monthly_metadata(ds, data[["YearsCE"]])
     assign("TraCESahul_time_steps", data, envir = .GlobalEnv)
     return(ds)
   }
-  handle_monthly_only <- function(f, aoi) {
-    ds <- terra::rast(f, win = aoi, md = FALSE)
+  handle_monthly_only <- function(f, aoi, vp = var_pos) {
+    ds <- terra::rast(f, subds = vp, win = aoi, md = FALSE)
     set_monthly_metadata(ds, get_monthly_years())
   }
-  handle_two_sets <- function(f_decadal, f_monthly,aoi) {
+  handle_two_sets <- function(f_decadal, f_monthly, aoi, vp = var_pos) {
     data <- load_timestep_table()
     chunk <- unname(out$chunk_num)
     if (is.null(chunk) || is.na(chunk)) {
@@ -288,17 +325,26 @@ import_TraCESahul <- function(files, aoi = NULL, CMIP6 = FALSE) {
     } else if (!is.na(chunk)) {
       data <- data.table::copy(data)[data$file_step == chunk, ]
     }
-    ds1  <- set_monthly_metadata(terra::rast(f_decadal, win = aoi, md = FALSE),
-                                 data$YearsCE)
-    ds2  <- set_monthly_metadata(terra::rast(f_monthly, win = aoi, md = FALSE),
+    if (length(f_decadal) > 1) {
+      ds1 <- lapply(seq_along(f_decadal), function(i,...) {
+        terra::rast(f_decadal[i], subds = vp, win = aoi, md = FALSE)
+      })
+      ds1 <- set_monthly_metadata(terra::rast(ds1), data$YearsCE)
+    } else {
+      ds1  <- set_monthly_metadata(ds = terra::rast(f_decadal, subds = vp,
+                                                    win = aoi, md = FALSE),
+                                   data$YearsCE)
+    }
+    ds2  <- set_monthly_metadata(terra::rast(f_monthly, subds = vp, win = aoi,
+                                             md = FALSE),
                                  get_monthly_years())
     assign("TraCESahul_time_steps", data, envir = .GlobalEnv)
     return(c(ds1, ds2))
   }
-  handle_cmip6 <- function(f, aoi, CMIP6) {
+  handle_cmip6 <- function(f, aoi, CMIP6, vp = var_pos) {
     ds_list <- lapply(seq_along(f), function(i) {
       years <- get_monthly_years(CMIP6 = CMIP6, start = out$start[i], end = out$end[i])
-      ds <- terra::rast(f[i], win = aoi, md = FALSE)
+      ds <- terra::rast(f[i], subds = vp, win = aoi, md = FALSE)
       set_monthly_metadata(ds, years)
     })
     if (length(ds_list) == 1) {

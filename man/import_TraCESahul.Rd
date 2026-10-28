@@ -65,12 +65,10 @@ See Example 5 using the test dataset below.
 base_dir <- "~/Documents/TraCE-Sahul"
 vars <- c("pr", "tasmax", "tasmin")
 
-# Example 1: full decadal data (no chunk) + annual, all variables
+# Example 1: Chunked decadal data + annual, all variables
 load_full <- function(base, var) {
-  f1 <- file.path(base, var,
-                  sprintf("TraCE-Sahul_decadal_22k_1500CE_\%s.nc", var))
-  f2 <- file.path(base, var,
-                  sprintf("TraCE-Sahul_annual_1500_1990_\%s.nc", var))
+  f1 <- file.path(base, var, sprintf("TraCE-Sahul_decadal_22k_1500CE_\%s_\%02d.nc", var, 1:6))
+  f2 <- file.path(base, var, sprintf("TraCE-Sahul_annual_1500_1990_\%s.nc", var))
   import_TraCESahul(files = c(f1, f2))
 }
 sahul_full <- lapply(vars, function(v) load_full(base_dir, v))
@@ -110,7 +108,8 @@ names(sahul_monthly) <- vars
 sahul_monthly
 
 # Example 5: Read in directly with terra
-pr_sahul <- terra::rast("~/Documents/TraCE-Sahul/pr/TraCE-Sahul_annual_1500_1990_pr.nc")
+pr_sahul <- terra::rast("~/Documents/TraCE-Sahul/pr/TraCE-Sahul_annual_1500_1990_pr.nc",
+                        subds = "pr")
 pr_sahul
 # class       : SpatRaster
 # size        : 100, 200, 5880  (nrow, ncol, nlyr)
